@@ -101,7 +101,15 @@ function ReviewContent() {
           /* --- 評価画面 (ReviewDetailPageのレイアウトを完全再現) --- */
           <>
             <header className="flex justify-between items-center mb-10">
-              <button onClick={() => router.push('/review')} className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors">← Back to Search</button>
+              <button 
+  onClick={() => {
+    setSelectedAlbum(null); // 1. アルバムの選択状態をクリア
+    router.push('/review'); // 2. URLを検索画面に戻す
+  }} 
+  className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors"
+>
+  ← Back to Search
+</button>
               <h1 className="text-xl font-black italic text-orange-500 uppercase tracking-tighter leading-none">MY DIGS.</h1>
             </header>
 
