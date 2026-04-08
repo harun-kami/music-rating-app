@@ -17,11 +17,9 @@ function ReviewContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
 
-  // --- 検索用のステート ---
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
 
-  // 1. アーティストページからの自動読み込み
   useEffect(() => {
     const fetchNewAlbum = async () => {
       if (!autoAlbumId || selectedAlbum) return;
@@ -44,7 +42,6 @@ function ReviewContent() {
     fetchNewAlbum();
   }, [autoAlbumId]);
 
-  // 2. 検索実行
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query) return;
@@ -84,14 +81,13 @@ function ReviewContent() {
     <main className="min-h-screen bg-[#121212] text-white p-6 md:p-12 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
         {!selectedAlbum ? (
-          /* --- 復活した検索画面 --- */
           <div className="pt-10">
             <header className="flex justify-between items-center mb-16">
               <Link href="/" className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase">← Library</Link>
               <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
             </header>
 
-            <form onSubmit={handleSearch} className="relative mb-20 group">
+            <form onSubmit={handleSearch} className="relative mb-12">
               <input 
                 type="text" 
                 value={query}
@@ -99,32 +95,42 @@ function ReviewContent() {
                 placeholder="Search Album..."
                 className="w-full bg-[#1e1e1e] border-2 border-gray-800 rounded-3xl py-6 px-8 text-xl font-black italic focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-700"
               />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-orange-500 text-black px-8 py-3 rounded-2xl font-black italic hover:scale-105 transition-all active:scale-95">SEARCH</button>
+              <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-orange-500 text-black px-8 py-3 rounded-2xl font-black italic">SEARCH</button>
             </form>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {results.map((album) => (
-                <div 
-                  key={album.collectionId} 
-                  onClick={() => router.push(`/review?id=${album.collectionId}`)}
-                  className="bg-[#1e1e1e] p-4 rounded-3xl border border-gray-800 hover:border-orange-500 transition-all cursor-pointer group"
-                >
-                  <img src={album.artworkUrl100.replace('100x100bb', '400x400bb')} className="w-full aspect-square object-cover rounded-2xl mb-4 group-hover:scale-105 transition-transform" alt="" />
-                  <h3 className="font-black italic uppercase text-xs truncate mb-1">{album.collectionName}</h3>
-                  <p className="text-gray-600 text-[10px] font-bold uppercase">{album.artistName}</p>
+            {/* --- 【修正】検索結果の横スクロール表示 --- */}
+            {results.length > 0 && (
+              <div className="relative">
+                <div className="flex overflow-x-auto gap-6 pb-12 snap-x scrollbar-hide">
+                  {results.map((album) => (
+                    <div 
+                      key={album.collectionId} 
+                      onClick={() => router.push(`/review?id=${album.collectionId}`)}
+                      className="flex-none w-48 md:w-56 bg-[#1e1e1e] p-4 rounded-[2rem] border border-gray-800 hover:border-orange-500 transition-all cursor-pointer group snap-start"
+                    >
+                      <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl">
+                        <img 
+                          src={album.artworkUrl100.replace('100x100bb', '600x600bb')} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          alt="" 
+                        />
+                      </div>
+                      <h3 className="font-black italic uppercase text-[10px] truncate mb-1">{album.collectionName}</h3>
+                      <p className="text-gray-600 text-[8px] font-bold uppercase tracking-widest">{album.artistName}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {/* スクロールできることを示すグラデーション（任意） */}
+                <div className="absolute right-0 top-0 bottom-12 w-20 bg-gradient-to-l from-[#121212] to-transparent pointer-events-none"></div>
+              </div>
+            )}
           </div>
         ) : (
-          /* --- 評価画面 (あなたのレイアウト) --- */
+          /* --- 評価画面（以前のスタイルを維持） --- */
           <>
             <header className="flex justify-between items-center mb-10">
-              <button 
-                onClick={() => { setSelectedAlbum(null); router.push('/review'); }} 
-                className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors"
-              >← Back to Search</button>
-              <h1 className="text-xl font-black italic text-orange-500 uppercase tracking-tighter leading-none">MY DIGS.</h1>
+              <button onClick={() => { setSelectedAlbum(null); router.push('/review'); }} className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase">← Back to Search</button>
+              <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
             </header>
 
             <div className="bg-[#1e1e1e] p-8 rounded-3xl mb-12 flex flex-col md:flex-row justify-between items-center border border-gray-800 shadow-xl gap-8">
