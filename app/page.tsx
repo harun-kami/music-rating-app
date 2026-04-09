@@ -5,33 +5,32 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 export default function LibraryPage() {
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [recentReviews, setRecentReviews] = useState<any[]>([]);
+  const [topGrails, setTopGrails] = useState<any[]>([]);
   const [trending, setTrending] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // 10点満点計算ロジック（既存の計算式を維持）
-  const calculateScore = (ratings: any, tracks: any[]) => {
-    if (!ratings || !tracks || tracks.length === 0) return "0.0";
-    const rankMap: { [key: string]: number } = { "S": 5, "A": 4, "B": 3, "C": 2, "D": 1 };
-    let totalPoints = 0, validTrackCount = 0;
-    Object.values(ratings).forEach((rank: any) => {
-      if (rank !== "-" && rankMap[rank]) {
-        totalPoints += rankMap[rank];
-        validTrackCount++;
-      }
-    });
-    if (validTrackCount === 0) return "0.0";
-    return ((totalPoints / (validTrackCount * 5)) * 10).toFixed(1);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      // 1. 自分のランキングを取得
-      const { data } = await supabase.from('reviews').select('*').order('score', { ascending: false });
-      if (data) setReviews(data);
+      
+      // 1. 最近のコレクション（更新順）
+      const { data: recent } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (recent) setRecentReviews(recent);
 
-      // 2. トレンドを取得
+      // 2. THE GRAILS / TOP 10（スコア順）
+      const { data: grails } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('score', { ascending: false })
+        .limit(10);
+      if (grails) setTopGrails(grails);
+
+      // 3. HOT DIGS（トレンド）
       try {
         const res = await fetch('/api/monthly-trending');
         const trendData = await res.json();
@@ -47,36 +46,46 @@ export default function LibraryPage() {
 
   return (
     <main className="min-h-screen bg-[#121212] text-white p-6 md:p-12 font-sans overflow-x-hidden text-left">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-16">
-          <h1 className="text-xl font-black italic text-orange-500 uppercase tracking-tighter leading-none">MY DIGS.</h1>
-          <Link href="/review" className="bg-orange-500 text-black px-6 py-2 rounded-full font-black italic text-[10px] hover:scale-105 transition-all uppercase">
-            Search Album
-          </Link>
-        </header>
-
-        {/* --- 1. あなたのオリジナルランキング（ここを元通りに修復） --- */}
+      <div className="max-w-[1400px] mx-auto">
+        
+        {/* --- 1. RECENT COLLECTION (横スクロール) --- */}
         <section className="mb-24">
-          <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] mb-10 pb-4 border-b border-gray-900">Your Rankings</h2>
-          <div className="grid gap-6">
-            {reviews.map((rev, i) => (
-              <Link key={rev.id} href={`/review/${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-4 rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all shadow-xl">
-                {/* 番号のスタイルを ArtistPage と統一 */}
-                <div className="flex-none w-14 text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-4 mr-2 flex items-center justify-center">
-                  #{i + 1}
+          <header className="flex items-center gap-3 mb-10">
+            <div className="w-1 h-6 bg-orange-500"></div> {/* オレンジの垂直バー */}
+            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Recent Collection</h2>
+          </header>
+          
+          <div className="flex overflow-x-auto gap-8 scrollbar-hide snap-x">
+            {recentReviews.map((rev) => (
+              <Link key={rev.id} href={`/review/${rev.id}`} className="flex-none w-44 group snap-start">
+                <div className="aspect-square mb-6 overflow-hidden rounded-xl border border-gray-800 transition-all duration-500 group-hover:border-orange-500 shadow-2xl">
+                  <img src={rev.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                 </div>
-                <img src={rev.image} className="w-16 h-16 rounded-xl object-cover mr-6 shadow-xl flex-none border border-white/5" alt="" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-lg uppercase italic truncate group-hover:text-orange-500 transition-colors">
-                    {rev.title}
-                  </h3>
-                  <p className="text-[10px] text-gray-600 font-bold uppercase truncate mt-1">
-                    {rev.artist}
-                  </p>
+                <h3 className="font-black italic uppercase text-[11px] leading-tight truncate mb-1">{rev.title}</h3>
+                <p className="text-gray-600 text-[9px] font-bold uppercase truncate mb-3">{rev.artist}</p>
+                <div className="text-4xl font-black text-orange-500 italic leading-none">
+                  {rev.score.toFixed(1)}
                 </div>
-                <div className="text-right ml-4 flex-none">
-                  <div className="text-3xl font-black text-orange-500 italic">
-                    {rev.score.toFixed(1)}
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* --- 2. THE GRAILS / TOP 10 --- */}
+        <section className="mb-24">
+          <header className="flex items-center gap-3 mb-10">
+            <div className="w-1 h-6 bg-orange-500"></div>
+            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">The Grails / Top 10</h2>
+          </header>
+          
+          <div className="flex overflow-x-auto gap-8 scrollbar-hide snap-x">
+            {topGrails.map((rev, i) => (
+              <Link key={rev.id} href={`/review/${rev.id}`} className="flex-none w-64 group snap-start relative">
+                <div className="aspect-square overflow-hidden rounded-[2.5rem] border border-gray-800 transition-all duration-500 group-hover:border-orange-500 shadow-2xl">
+                  <img src={rev.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80" alt="" />
+                  {/* 画像内の順位バッジ */}
+                  <div className="absolute top-6 left-6 w-12 h-12 bg-black rounded-full flex items-center justify-center border border-gray-800">
+                    <span className="text-xs font-black italic">#{i + 1}</span>
                   </div>
                 </div>
               </Link>
@@ -84,27 +93,28 @@ export default function LibraryPage() {
           </div>
         </section>
 
-        {/* --- 2. HOT DIGS (既存のランキングの下に新設) --- */}
+        {/* --- 3. HOT DIGS (新設：あなたのスタイルを完全に継承) --- */}
         {trending.length > 0 && (
           <section className="mb-20">
-            <header className="flex items-end gap-4 mb-8">
-              <h2 className="text-4xl font-black italic text-orange-500 uppercase tracking-tighter leading-none">HOT DIGS.</h2>
-              <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1 italic">World Trending</p>
+            <header className="flex items-center gap-3 mb-10">
+              <div className="w-1 h-6 bg-orange-500"></div>
+              <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Hot Digs / Trending</h2>
             </header>
-
-            <div className="flex overflow-x-auto gap-6 pb-12 scrollbar-hide snap-x">
+            
+            <div className="flex overflow-x-auto gap-8 scrollbar-hide snap-x">
               {trending.map((album) => (
-                <Link key={album.id} href={`/review?id=${album.id}`} className="flex-none w-40 md:w-48 group snap-start">
-                  <div className="relative aspect-square mb-4 overflow-hidden rounded-[2rem] border border-gray-800 group-hover:border-orange-500 transition-all duration-500 shadow-2xl">
+                <Link key={album.id} href={`/review?id=${album.id}`} className="flex-none w-44 group snap-start">
+                  <div className="aspect-square mb-6 overflow-hidden rounded-xl border border-gray-800 transition-all duration-500 group-hover:border-orange-500 shadow-2xl">
                     <img src={album.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                   </div>
-                  <h3 className="text-[10px] font-black italic uppercase truncate mb-1 group-hover:text-orange-500 transition-colors">{album.name}</h3>
-                  <p className="text-[8px] text-gray-600 font-bold uppercase truncate tracking-widest">{album.artist}</p>
+                  <h3 className="font-black italic uppercase text-[11px] leading-tight truncate mb-1 group-hover:text-orange-500 transition-colors">{album.name}</h3>
+                  <p className="text-gray-600 text-[9px] font-bold uppercase truncate tracking-widest">{album.artist}</p>
                 </Link>
               ))}
             </div>
           </section>
         )}
+
       </div>
     </main>
   );
