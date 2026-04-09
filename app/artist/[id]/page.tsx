@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // useRouterを追加
 import Link from 'next/link';
 
 export default function ArtistPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [artist, setArtist] = useState<any>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [myRankings, setMyRankings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ホーム画面と共通の10点満点計算ロジック
   const calculateScore = (ratings: any, tracks: any[]) => {
     if (!ratings || !tracks || tracks.length === 0) return "0.0";
     const rankMap: { [key: string]: number } = { "S": 5, "A": 4, "B": 3, "C": 2, "D": 1 };
@@ -44,7 +44,7 @@ export default function ArtistPage() {
 
           const savedReviews = JSON.parse(localStorage.getItem('my-digs-reviews') || '[]');
           const filtered = savedReviews
-            .filter((rev: any) => String(rev.artistId) === String(id))
+            .filter((rev: any) => String(rev.artist_id || rev.artistId) === String(id))
             .sort((a: any, b: any) => b.score - a.score);
           setMyRankings(filtered);
         }
@@ -56,11 +56,11 @@ export default function ArtistPage() {
     fetchArtistData();
   }, [id]);
 
-  if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black tracking-widest animate-pulse">DIGGING...</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black tracking-widest animate-pulse italic">DIGGING...</div>;
 
   if (errorMsg) return (
-    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
-      <h2 className="text-orange-500 font-black text-2xl mb-4">ERROR: {errorMsg}</h2>
+    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6 text-orange-500 font-black">
+      <h2 className="text-2xl mb-4 uppercase italic">ERROR: {errorMsg}</h2>
       <Link href="/review" className="text-gray-500 underline uppercase text-xs font-bold transition-colors hover:text-orange-500">Back to Search</Link>
     </div>
   );
@@ -70,7 +70,7 @@ export default function ArtistPage() {
       <div className="max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-10">
           <Link href="/" className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors">← Library</Link>
-          <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
+          <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none tracking-tighter">MY DIGS.</h1>
         </header>
 
         {/* アーティストヘッダー */}
@@ -85,7 +85,7 @@ export default function ArtistPage() {
           </div>
         </div>
 
-        {/* --- MY RANKINGS --- */}
+        {/* MY RANKINGS */}
         {myRankings.length > 0 && (
           <section className="mb-20">
             <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter mb-8 flex items-center gap-4">
@@ -94,13 +94,10 @@ export default function ArtistPage() {
             <div className="grid gap-4">
               {myRankings.map((rev, i) => (
                 <Link key={rev.id} href={`/review/${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-4 rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
-                  
-                  {/* --- 【修正ポイント】順位の数字を大きくして左にずらす --- */}
                   <div className="flex-none w-14 text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-4 mr-2 flex items-center justify-center">
                     #{i + 1}
                   </div>
-                  
-                  <img src={rev.image} className="w-16 h-16 rounded-xl object-cover mr-6 shadow-xl flex-none" alt="" />
+                  <img src={rev.image} className="w-16 h-16 rounded-xl object-cover mr-6 shadow-xl flex-none border border-white/5" alt="" />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-black text-lg uppercase italic truncate group-hover:text-orange-500 transition-colors">{rev.title}</h3>
                   </div>
@@ -120,10 +117,13 @@ export default function ArtistPage() {
           <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-8 pb-4 border-b border-gray-900">Discography</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
             {albums.map((album) => {
+              // すでに評価済みかどうかをチェック
               const isRated = myRankings.some(r => String(r.id) === String(album.id));
+              
               return (
                 <div key={album.id} className="group relative">
-                  <Link href={`/review?id=${album.id}`}>
+                  {/* 【修正】評価済みなら詳細へ、未評価なら評価作成ページへ */}
+                  <Link href={isRated ? `/review/${album.id}` : `/review?id=${album.id}`}>
                     <div className={`aspect-square mb-4 overflow-hidden rounded-2xl border transition-all duration-500 shadow-xl 
                       ${isRated ? 'border-orange-500 shadow-orange-500/20' : 'border-gray-800 group-hover:border-gray-500'}`}>
                       <img 
@@ -138,7 +138,7 @@ export default function ArtistPage() {
                         </div>
                       )}
                     </div>
-                    <h3 className="font-bold text-[11px] line-clamp-2 leading-tight group-hover:text-orange-500 transition-colors">
+                    <h3 className="font-bold text-[11px] line-clamp-2 leading-tight group-hover:text-orange-500 transition-colors uppercase italic">
                       {album.name}
                     </h3>
                     <p className="text-[10px] text-gray-600 font-bold mt-2">
