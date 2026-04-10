@@ -49,6 +49,18 @@ export default function Home() {
   const topEPs = sortedByScore.filter(rev => rev.title.toLowerCase().includes('ep')).slice(0, 10);
 
   const genres = [
+    { 
+    title: "The Scene / J-Hip Hop", 
+    data: sortedByScore.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) 
+  },
+  { 
+    title: "The Scene / J-Rock", 
+    data: sortedByScore.filter(r => r.genre === 'J-Rock').slice(0, 5) 
+  },
+  { 
+    title: "The Scene / J-Pop", 
+    data: sortedByScore.filter(r => r.genre === 'J-Pop').slice(0, 5) 
+  },
     { title: "The Scene / Hip-Hop", data: sortedByScore.filter(r => r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')).slice(0, 5) },
     { title: "The Scene / Rock", data: sortedByScore.filter(r => r.genre?.includes('Rock')).slice(0, 5) },
     { title: "The Scene / R&B & Soul", data: sortedByScore.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) },
