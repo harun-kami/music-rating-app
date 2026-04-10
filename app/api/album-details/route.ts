@@ -17,20 +17,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
-    // 1番目のデータがアルバム本体、2番目以降が曲のリストです
+    // 1番目のデータがアルバム本体、2番目以降が曲のリスト
     const albumInfo = data.results[0];
     const trackList = data.results.slice(1).map((track: any) => track.trackName);
 
-    // /api/album-details/route.ts 内のイメージ
-return NextResponse.json({
-  id: String(albumInfo.collectionId),
-  name: albumInfo.collectionName,
-  artistName: albumInfo.artistName,
-  artistId: String(albumInfo.artistId),
-  image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
-  tracks: trackList,
-  genre: albumInfo.primaryGenreName, // ← ここでジャンルを渡す！
-});
+    return NextResponse.json({
+      id: String(albumInfo.collectionId),
+      name: albumInfo.collectionName,
+      artistName: albumInfo.artistName,
+      artistId: String(albumInfo.artistId),
+      image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
+      tracks: trackList,
+      genre: albumInfo.primaryGenreName // ← これを追加
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

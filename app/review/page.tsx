@@ -14,7 +14,7 @@ function ReviewContent() {
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [ratings, setRatings] = useState<{ [key: number]: string }>({});
   const [favoriteTrack, setFavoriteTrack] = useState<number | null>(null);
-  const [expandedTrack, setExpandedTrack] = useState<number | null>(null); // 追加
+  const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
 
@@ -36,7 +36,7 @@ function ReviewContent() {
             image: data.image, 
             tracks: data.tracks, 
             artistId: data.artistId,
-            genre: data.primaryGenreName // ジャンル取得
+            genre: data.genre // ← ジャンルをセット
           });
           const init: any = {};
           data.tracks.forEach((_: any, i: number) => { init[i] = "-"; });
@@ -69,22 +69,21 @@ function ReviewContent() {
   };
 
   const handleSave = async () => {
-  setSaveStatus("SAVING...");
-  
-  const cleanData = {
-    id: String(selectedAlbum.id),
-    artist_id: String(selectedAlbum.artistId),
-    title: selectedAlbum.title,
-    artist: selectedAlbum.artist,
-    image: selectedAlbum.image,
-    tracks: selectedAlbum.tracks,
-    ratings: ratings,
-    favorite_track: favoriteTrack,
-    score: parseFloat(calculateScoreDisplay()),
-    genre: selectedAlbum.genre // ← これでデータベースに保存される！
-  };
+    setSaveStatus("SAVING...");
+    const cleanData = {
+      id: String(selectedAlbum.id),
+      artist_id: String(selectedAlbum.artistId),
+      title: selectedAlbum.title,
+      artist: selectedAlbum.artist,
+      image: selectedAlbum.image,
+      tracks: selectedAlbum.tracks,
+      ratings: ratings,
+      favorite_track: favoriteTrack,
+      score: parseFloat(calculateScoreDisplay()),
+      genre: selectedAlbum.genre || "Unknown" // ← データベースへ保存
+    };
 
-  const { error } = await supabase.from('reviews').upsert(cleanData);
+    const { error } = await supabase.from('reviews').upsert(cleanData);
     if (error) { setSaveStatus("ERROR! ❌"); } 
     else { setSaveStatus("SAVED! 🔥"); setTimeout(() => router.push('/'), 1500); }
   };
