@@ -8,7 +8,7 @@ export default function Home() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [trends, setTrends] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openGenre, setOpenGenre] = useState<string | null>(null); // スマホ用開閉管理
+  const [openGenre, setOpenGenre] = useState<string | null>(null);
   
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const trendRef = useRef<HTMLDivElement | null>(null);
@@ -76,9 +76,11 @@ export default function Home() {
           <div ref={carouselRef} className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
             {recentDigs.map((rev) => (
               <div key={rev.id} className="flex-none w-[130px] md:w-[140px] group text-left">
-                <Link href={`/review/${rev.id}`} className="block aspect-square rounded-lg overflow-hidden mb-3 bg-gray-900 border border-white/5"><img src={rev.image} className="w-full h-full object-cover" alt="" /></Link>
+                <Link href={`/review/${rev.id}`} className="block aspect-square rounded-lg overflow-hidden mb-3 bg-gray-900 border border-white/5 transition-all group-hover:border-orange-500/50">
+                  <img src={rev.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                </Link>
                 <h3 className="font-bold text-[9px] uppercase italic truncate mb-0.5">{rev.title}</h3>
-                <Link href={`/artist/${rev.artist_id}`} className="text-[8px] text-gray-600 font-bold uppercase truncate block">{rev.artist}</Link>
+                <Link href={`/artist/${rev.artist_id}`} className="text-[8px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{rev.artist}</Link>
                 <span className="text-lg font-black text-orange-500 italic">{rev.score.toFixed(1)}</span>
               </div>
             ))}
@@ -93,17 +95,22 @@ export default function Home() {
           <div ref={trendRef} className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
             {trends.map((album) => (
               <Link href={`/review?id=${album.id}`} key={album.id} className="flex-none w-[160px] md:w-[180px] group">
-                <div className="aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-900 border border-gray-800 relative shadow-2xl"><img src={album.image} className="w-full h-full object-cover opacity-80" alt="" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" /><div className="absolute bottom-3 left-3 right-3"><p className="text-[7px] text-orange-500 font-black italic uppercase mb-1">New Entry</p><h3 className="font-black text-[9px] uppercase italic truncate">{album.name}</h3></div></div>
+                <div className="aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-900 border border-gray-800 relative shadow-2xl group-hover:border-orange-500 transition-all">
+                  <img src={album.image} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-[7px] text-orange-500 font-black italic uppercase mb-1">New Entry</p>
+                    <h3 className="font-black text-[9px] uppercase italic truncate">{album.name}</h3>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* ジャンルセクション: スマホのみ開閉式 / PCは全表示 */}
         <div className="space-y-12 md:space-y-32">
           {genres.map((g, idx) => (
             <div key={idx} className="space-y-8">
-              {/* スマホ用ヘッダーボタン */}
               <button 
                 onClick={() => setOpenGenre(openGenre === g.id ? null : g.id)}
                 className="w-full flex md:hidden justify-between items-center text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 py-2"
@@ -112,7 +119,6 @@ export default function Home() {
                 <span className={`text-[8px] transition-transform ${openGenre === g.id ? 'rotate-180' : ''}`}>▼</span>
               </button>
 
-              {/* コンテンツエリア (スマホは開閉 / PCは常にblock) */}
               <div className={`${openGenre === g.id ? 'block' : 'hidden'} md:block transition-all`}>
                 <RankingSection title={g.title} data={g.data} hideTitleOnMobile={true} />
               </div>
@@ -138,10 +144,19 @@ function RankingSection({ title, data, hideTitleOnMobile = false }: { title: str
         {data.map((review, index) => (
           <div key={review.id} className="group relative">
             <Link href={`/review/${review.id}`}>
-              <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl"><img src={review.image} className="w-full h-full object-cover" alt="" /><div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{index + 1}</div><div className="absolute bottom-2 right-2 bg-orange-500 text-black font-black italic px-1.5 py-0.5 rounded-lg text-[8px]">{review.score.toFixed(1)}</div></div>
-              <h3 className="px-1 font-black text-[9px] md:text-[10px] uppercase italic truncate mb-0.5">{review.title}</h3>
+              <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl group-hover:border-orange-500 transition-all">
+                <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                {/* 順位：常に表示 */}
+                <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{index + 1}</div>
+                
+                {/* スコア：マウスを合わせた時だけ表示 (opacity-0 group-hover:opacity-100) */}
+                <div className="absolute bottom-2 right-2 bg-orange-500 text-black font-black italic px-1.5 py-0.5 rounded-lg text-[8px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-2xl">
+                  {review.score.toFixed(1)}
+                </div>
+              </div>
+              <h3 className="px-1 font-black text-[9px] md:text-[10px] uppercase italic truncate mb-0.5 group-hover:text-orange-500 transition-colors">{review.title}</h3>
             </Link>
-            <Link href={`/artist/${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block">{review.artist}</Link>
+            <Link href={`/artist/${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{review.artist}</Link>
           </div>
         ))}
       </div>
