@@ -70,17 +70,33 @@ function ReviewContent() {
 
   const handleSave = async () => {
     setSaveStatus("SAVING...");
-    const cleanData = {
-      id: String(selectedAlbum.id), artist_id: String(selectedAlbum.artistId),
-      title: selectedAlbum.title, artist: selectedAlbum.artist, image: selectedAlbum.image,
-      tracks: selectedAlbum.tracks, ratings: ratings, favorite_track: favoriteTrack,
-      score: parseFloat(calculateScoreDisplay())
-    };
-    const { error } = await supabase.from('reviews').upsert(cleanData);
+    // app/review/page.tsx の handleSave 内を微修正
+const handleSave = async () => {
+  setSaveStatus("SAVING...");
+  
+  // iTunes APIの結果（results）からジャンルを取得している箇所を確認
+  // 選択したアルバムのデータに primaryGenreName が含まれています
+  
+  const cleanData = {
+    id: String(selectedAlbum.id),
+    artist_id: String(selectedAlbum.artistId),
+    title: selectedAlbum.title,
+    artist: selectedAlbum.artist,
+    image: selectedAlbum.image,
+    tracks: selectedAlbum.tracks,
+    ratings: ratings,
+    favorite_track: favoriteTrack,
+    score: parseFloat(calculateScoreDisplay()),
+    // --- ジャンル保存を追加 ---
+    genre: selectedAlbum.genre // 事前にAPIから取得しておく
+  };
+
+  const { error } = await supabase.from('reviews').upsert(cleanData);
+  // ...以下略
     if (error) { setSaveStatus("ERROR! ❌"); } 
     else { setSaveStatus("SAVED! 🔥"); setTimeout(() => router.push('/'), 1500); }
   };
-
+  };
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black tracking-widest animate-pulse italic">DIGGING...</div>;
 
   return (
