@@ -8,8 +8,10 @@ export default function Home() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [trends, setTrends] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const trendRef = useRef<HTMLDivElement>(null);
+  
+  // TypeScriptのエラーを回避するため、Refの型に | null を許容します
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const trendRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,14 +25,17 @@ export default function Home() {
         const res = await fetch('/api/trends');
         const trendData = await res.json();
         setTrends(trendData);
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        console.error("Trends fetch error:", e); 
+      }
       
       setIsLoading(false);
     };
     fetchData();
   }, []);
 
-  const scroll = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
+  // 引数の型を React.RefObject<HTMLDivElement | null> に変更してエラーを解消
+  const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
       ref.current.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
     }
