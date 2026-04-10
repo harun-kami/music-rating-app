@@ -36,46 +36,32 @@ export default function Home() {
     }
   };
 
-  // --- フィルタリングロジック ---
   const sortedByScore = [...reviews].sort((a, b) => b.score - a.score);
   const recentDigs = [...reviews].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   
-  // LP（タイトルに EP を含まない）と EP（含む）の切り分け
   const topLPs = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep')).slice(0, 10);
   const topEPs = sortedByScore.filter(rev => rev.title.toLowerCase().includes('ep')).slice(0, 10);
-
-  // ジャンル別ランキング（すべてから EP を除外）
-  const nonEPReviews = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep'));
 
   const genres = [
     { 
       title: "The Scene / Hip-Hop", 
-      data: nonEPReviews.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) 
+      data: sortedByScore.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) 
     },
     { 
       title: "The Scene / Rock", 
-      data: nonEPReviews.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) 
+      data: sortedByScore.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) 
     },
     { 
       title: "The Scene / R&B & Soul", 
-      data: nonEPReviews.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) 
+      data: sortedByScore.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) 
     },
     { 
       title: "The Scene / Electronic", 
-      data: nonEPReviews.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) 
+      data: sortedByScore.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) 
     },
-    { 
-      title: "The Scene / J-Hip Hop", 
-      data: nonEPReviews.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) 
-    },
-    { 
-      title: "The Scene / J-Rock", 
-      data: nonEPReviews.filter(r => r.genre === 'J-Rock').slice(0, 5) 
-    },
-    { 
-      title: "The Scene / J-Pop", 
-      data: nonEPReviews.filter(r => r.genre === 'J-Pop').slice(0, 5) 
-    }
+    { title: "The Scene / J-Hip Hop", data: sortedByScore.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) },
+    { title: "The Scene / J-Rock", data: sortedByScore.filter(r => r.genre === 'J-Rock').slice(0, 5) },
+    { title: "The Scene / J-Pop", data: sortedByScore.filter(r => r.genre === 'J-Pop').slice(0, 5) }
   ];
 
   if (isLoading) return (
@@ -88,13 +74,17 @@ export default function Home() {
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-8 font-sans overflow-x-hidden text-left">
       <div className="max-w-6xl mx-auto">
         
-        {/* HEADER */}
+        {/* --- HEADER --- */}
         <header className="flex justify-between items-center mb-12">
           <div className="text-left">
             <h1 className="text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
             <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
           </div>
-          <Link href="/review" className="bg-orange-500 hover:bg-white text-black px-4 py-2 rounded-xl font-black text-[10px] transition-all">+ NEW DIG</Link>
+          <div className="flex gap-4">
+            {/* ヘッダーにもランキングへのリンクを追加 */}
+            <Link href="/ranking" className="hidden md:flex border border-gray-800 hover:border-orange-500 text-gray-500 hover:text-orange-500 px-4 py-2 rounded-xl font-black text-[9px] transition-all items-center italic uppercase tracking-widest">Global Ranking</Link>
+            <Link href="/review" className="bg-orange-500 hover:bg-white text-black px-4 py-2 rounded-xl font-black text-[10px] transition-all">+ NEW DIG</Link>
+          </div>
         </header>
 
         {reviews.length === 0 && trends.length === 0 ? (
@@ -123,7 +113,6 @@ export default function Home() {
                       </div>
                     </Link>
                     <h3 className="font-bold text-[9px] uppercase italic truncate mb-0.5">{rev.title}</h3>
-                    {/* アーティストリンク復活 */}
                     <Link href={`/artist/${rev.artist_id}`}>
                       <p className="text-[8px] text-gray-600 hover:text-orange-500 font-bold uppercase truncate mb-1 transition-colors leading-none">
                         {rev.artist}
@@ -135,13 +124,24 @@ export default function Home() {
               </div>
             </section>
 
+            {/* --- RANKING PAGE LINK BUTTON (新設：ランキングエリアの入り口) --- */}
+            <div className="flex justify-end -mb-24">
+              <Link href="/ranking" className="group flex items-center gap-4 bg-[#1a1a1a] border border-gray-800 hover:border-orange-500 p-4 rounded-2xl transition-all shadow-2xl">
+                <div className="text-right">
+                  <p className="text-[6px] text-gray-600 font-black uppercase tracking-widest leading-none mb-1">Archive Stats</p>
+                  <p className="text-[10px] text-white font-black uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">View Detailed Ranking →</p>
+                </div>
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-black text-lg">📊</div>
+              </Link>
+            </div>
+
             {/* 2. LPs Ranking */}
             <RankingSection title="The Grails / LPs" data={topLPs} />
 
             {/* 3. EPs Ranking */}
             <RankingSection title="Short Archive / EPs" data={topEPs} />
 
-            {/* 4. New Release (Trends) */}
+            {/* 4. New Release */}
             <section className="relative">
               <div className="flex justify-between items-end mb-6">
                 <div>
@@ -169,7 +169,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 5. Genre Ranking (Top 5) - J-Genres are at the end */}
+            {/* 5. Genre Ranking */}
             <div className="space-y-24">
               {genres.map((g, idx) => (
                 <RankingSection key={idx} title={g.title} data={g.data} />
@@ -179,7 +179,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* FOOTER */}
         <footer className="mt-20 border-t border-gray-900 pt-10 flex gap-12 text-left opacity-50">
           <div>
             <div className="text-3xl font-black text-white">{reviews.length}</div>
@@ -217,7 +216,6 @@ function RankingSection({ title, data }: { title: string, data: any[] }) {
               </div>
               <h3 className="px-2 font-black text-[10px] uppercase italic truncate mb-1 group-hover:text-orange-500 transition-colors">{review.title}</h3>
             </Link>
-            {/* アーティストリンク復活 */}
             <Link href={`/artist/${review.artist_id || review.artistId}`}>
               <p className="px-2 text-[8px] text-gray-600 hover:text-orange-500 font-bold uppercase truncate transition-colors leading-none">
                 {review.artist}
