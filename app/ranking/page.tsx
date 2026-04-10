@@ -12,6 +12,10 @@ export default function RankingPage() {
   // フィルター用ステート
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
+  const [selectedFormat, setSelectedFormat] = useState<string>("ALL"); // ALL, LP, EP
+
+  // どのドロップダウンが開いているか管理
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -24,21 +28,34 @@ export default function RankingPage() {
     fetchAll();
   }, []);
 
-  // フィルター処理
+  // フィルターロジック
   useEffect(() => {
     let result = [...reviews];
+    
     if (selectedYear !== "ALL") {
       result = result.filter(r => r.release_year === selectedYear);
     }
+    
     if (selectedGenre !== "ALL") {
       result = result.filter(r => r.genre === selectedGenre);
     }
-    setFilteredReviews(result);
-  }, [selectedYear, selectedGenre, reviews]);
 
-  // フィルターの選択肢をデータから自動生成
+    if (selectedFormat === "EP") {
+      result = result.filter(r => r.title.toLowerCase().includes('ep'));
+    } else if (selectedFormat === "LP") {
+      result = result.filter(r => !r.title.toLowerCase().includes('ep'));
+    }
+
+    setFilteredReviews(result);
+  }, [selectedYear, selectedGenre, selectedFormat, reviews]);
+
   const years = ["ALL", ...Array.from(new Set(reviews.map(r => r.release_year).filter(Boolean))).sort().reverse()];
   const genres = ["ALL", ...Array.from(new Set(reviews.map(r => r.genre).filter(Boolean))).sort()];
+  const formats = ["ALL", "LP", "EP"];
+
+  const toggleDropdown = (name: string) => {
+    setOpenFilter(openFilter === name ? null : name);
+  };
 
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING RANKING...</div>;
 
@@ -55,42 +72,71 @@ export default function RankingPage() {
           </div>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-12">
+        <div className="flex flex-col md:flex-row gap-12 items-start">
           
-          {/* LEFT SIDEBAR: FILTERS */}
-          <aside className="w-full md:w-48 space-y-10 flex-none">
-            <div>
-              <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4 italic">Release Year</h3>
-              <div className="flex flex-wrap md:flex-col gap-2">
+          {/* LEFT SIDEBAR: ACCORDION FILTERS */}
+          <aside className="w-full md:w-56 space-y-4 flex-none sticky top-12">
+            
+            {/* YEAR FILTER */}
+            <div className="border-b border-gray-900 pb-2">
+              <button 
+                onClick={() => toggleDropdown('year')}
+                className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase tracking-widest italic py-2"
+              >
+                <span>Release Year: {selectedYear}</span>
+                <span className={`transition-transform duration-300 ${openFilter === 'year' ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'year' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {years.map(year => (
-                  <button 
-                    key={year} 
-                    onClick={() => setSelectedYear(year)}
-                    className={`text-left text-[11px] font-black uppercase italic transition-all ${selectedYear === year ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}
-                  >
-                    {year}
-                  </button>
+                  <button key={year} onClick={() => { setSelectedYear(year); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedYear === year ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{year}</button>
                 ))}
               </div>
             </div>
 
-            <div>
-              <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4 italic">Genre</h3>
-              <div className="flex flex-wrap md:flex-col gap-2">
+            {/* GENRE FILTER */}
+            <div className="border-b border-gray-900 pb-2">
+              <button 
+                onClick={() => toggleDropdown('genre')}
+                className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase tracking-widest italic py-2"
+              >
+                <span>Genre: {selectedGenre}</span>
+                <span className={`transition-transform duration-300 ${openFilter === 'genre' ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'genre' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {genres.map(genre => (
-                  <button 
-                    key={genre} 
-                    onClick={() => setSelectedGenre(genre)}
-                    className={`text-left text-[11px] font-black uppercase italic transition-all ${selectedGenre === genre ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}
-                  >
-                    {genre}
-                  </button>
+                  <button key={genre} onClick={() => { setSelectedGenre(genre); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedGenre === genre ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{genre}</button>
                 ))}
               </div>
             </div>
+
+            {/* FORMAT FILTER (LP/EP) */}
+            <div className="border-b border-gray-900 pb-2">
+              <button 
+                onClick={() => toggleDropdown('format')}
+                className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase tracking-widest italic py-2"
+              >
+                <span>Format: {selectedFormat}</span>
+                <span className={`transition-transform duration-300 ${openFilter === 'format' ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'format' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {formats.map(format => (
+                  <button key={format} onClick={() => { setSelectedFormat(format); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedFormat === format ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{format}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* RESET BUTTON */}
+            {(selectedYear !== "ALL" || selectedGenre !== "ALL" || selectedFormat !== "ALL") && (
+              <button 
+                onClick={() => { setSelectedYear("ALL"); setSelectedGenre("ALL"); setSelectedFormat("ALL"); }}
+                className="w-full mt-4 text-[8px] font-black text-gray-500 hover:text-orange-500 uppercase tracking-widest transition-colors text-left"
+              >
+                × Reset Filters
+              </button>
+            )}
           </aside>
 
-          {/* RIGHT CONTENT: VERTICAL RANKING LIST */}
+          {/* RIGHT CONTENT: RANKING LIST */}
           <div className="flex-1 space-y-4">
             {filteredReviews.length === 0 ? (
               <div className="py-20 text-center border-2 border-dashed border-gray-900 rounded-[2rem]">
@@ -103,15 +149,10 @@ export default function RankingPage() {
                   key={rev.id}
                   className="group flex items-center bg-[#1a1a1a] rounded-2xl p-4 border border-gray-800 hover:border-orange-500 transition-all gap-6 shadow-2xl"
                 >
-                  {/* RANK NUMBER */}
                   <div className="text-3xl md:text-5xl font-black italic text-gray-800 group-hover:text-orange-500 transition-colors w-12 md:w-20 flex-none text-center">
                     #{index + 1}
                   </div>
-
-                  {/* ALBUM ART */}
                   <img src={rev.image} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shadow-xl flex-none border border-white/5" alt="" />
-
-                  {/* INFO */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-black text-sm md:text-xl uppercase italic truncate leading-tight group-hover:text-orange-500 transition-colors">{rev.title}</h3>
                     <div className="flex gap-4 items-center mt-1">
@@ -119,12 +160,8 @@ export default function RankingPage() {
                       <span className="text-[8px] bg-gray-900 text-gray-500 px-2 py-0.5 rounded italic font-black">{rev.release_year}</span>
                     </div>
                   </div>
-
-                  {/* SCORE */}
                   <div className="text-right flex-none">
-                    <div className="text-2xl md:text-4xl font-black text-orange-500 italic leading-none">
-                      {rev.score.toFixed(1)}
-                    </div>
+                    <div className="text-2xl md:text-4xl font-black text-orange-500 italic leading-none">{rev.score.toFixed(1)}</div>
                     <div className="text-[7px] text-gray-700 font-bold uppercase mt-1">Archive Score</div>
                   </div>
                 </Link>
