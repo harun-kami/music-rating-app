@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // useRouter を追加
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 export default function ReviewDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
+  const router = useRouter(); // 初期化
   const ranks = ["S", "A", "B", "C", "D", "-"];
   const [review, setReview] = useState<any>(null);
   const [ratings, setRatings] = useState<{ [key: number]: string }>({});
@@ -50,7 +50,8 @@ export default function ReviewDetailPage() {
       ratings: ratings,
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
-      genre: review.genre || "Unknown"
+      genre: review.genre || "Unknown",
+      release_year: review.release_year || "Unknown"
     };
 
     const { error } = await supabase.from('reviews').upsert(cleanData);
@@ -67,10 +68,18 @@ export default function ReviewDetailPage() {
   return (
     <main className="min-h-screen bg-[#121212] text-white p-6 md:p-12 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
+        
+        {/* --- HEADER (ここを router.back に変更) --- */}
         <header className="flex justify-between items-center mb-10">
-          <Link href="/" className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors">← Back</Link>
+          <button 
+            onClick={() => router.back()} 
+            className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors"
+          >
+            ← Back
+          </button>
           <h1 className="text-xl font-black italic text-orange-500 uppercase tracking-tighter leading-none">MY DIGS.</h1>
         </header>
+
         <div className="bg-[#1e1e1e] p-8 rounded-3xl mb-12 flex flex-col md:flex-row justify-between items-center border border-gray-800 shadow-xl gap-8">
           <div className="flex gap-6 items-center min-w-0">
             <img src={review.image} className="w-24 h-24 md:w-32 md:h-32 rounded-xl shadow-2xl object-cover border border-white/5" alt="" />
@@ -84,6 +93,7 @@ export default function ReviewDetailPage() {
           </div>
           <button onClick={handleUpdate} className="w-full md:w-auto px-10 py-5 bg-orange-500 text-black rounded-2xl font-black transition-all active:scale-95 shadow-xl hover:scale-105">{saveStatus || "UPDATE DIG"}</button>
         </div>
+
         <div className="space-y-4 pb-20">
           {review.tracks.map((track: string, i: number) => (
             <div key={i} className="flex flex-col bg-[#1e1e1e]/50 rounded-2xl border border-gray-800 overflow-hidden transition-all">
