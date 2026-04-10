@@ -28,7 +28,8 @@ export async function GET(request: Request) {
       artistId: String(albumInfo.artistId),
       image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
       tracks: trackList,
-      genre: albumInfo.primaryGenreName // ← これを追加
+      genre: albumInfo.primaryGenreName, // ← これを追加
+      release_year: albumInfo.releaseDate ? albumInfo.releaseDate.substring(0, 4) : "Unknown"
     });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -80,7 +80,8 @@ function ReviewContent() {
       ratings: ratings,
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
-      genre: selectedAlbum.genre || "Unknown" // ← データベースへ保存
+      genre: selectedAlbum.genre || "Unknown",
+      release_year: selectedAlbum.release_year 
     };
 
     const { error } = await supabase.from('reviews').upsert(cleanData);
