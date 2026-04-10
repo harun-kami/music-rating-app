@@ -41,28 +41,31 @@ export default function RankingPage() {
   const toggleDropdown = (name: string) => setOpenFilter(openFilter === name ? null : name);
   const resetAllFilters = () => { setSelectedYear("ALL"); setSelectedGenre("ALL"); setSelectedFormat("ALL"); setOpenFilter(null); };
 
-  if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic">SYNCING RANKING...</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING RANKING...</div>;
 
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans text-left pt-12 md:pt-8">
       <div className="max-w-6xl mx-auto space-y-12">
         
         <header className="flex justify-between items-center mb-10">
-          <Link href="/" className="text-gray-500 text-[10px] font-bold uppercase">← Back</Link>
-          <div className="text-right"><h1 className="text-xl md:text-3xl font-black italic text-orange-500 uppercase leading-none">DETAIL RANKING.</h1><p className="text-[6px] text-gray-600 font-bold uppercase mt-1 leading-none">Sorted by score // {filteredReviews.length} items</p></div>
+          <Link href="/" className="text-gray-500 text-[10px] font-bold uppercase transition-colors hover:text-orange-500">← Back</Link>
+          <div className="text-right">
+            <h1 className="text-xl md:text-3xl font-black italic text-orange-500 uppercase leading-none">DETAIL RANKING.</h1>
+            <p className="text-[6px] text-gray-600 font-bold uppercase mt-1">Sorted by score // {filteredReviews.length} items</p>
+          </div>
         </header>
 
         <div className="flex flex-col md:flex-row gap-8 items-start">
           
-          {/* フィルターセクション: PC(横・固定) / スマホ(上・ドロップダウン) */}
-          <aside className="w-full md:w-48 space-y-2 flex-none md:sticky md:top-12">
+          {/* SIDEBAR FILTER: PCでは縦並び固定 / スマホではドロップダウン */}
+          <aside className="w-full md:w-48 space-y-4 flex-none md:sticky md:top-12">
             
-            {/* 全リセット: PCではボタン、スマホでも表示 */}
             {(selectedYear !== "ALL" || selectedGenre !== "ALL" || selectedFormat !== "ALL") && (
-              <button onClick={resetAllFilters} className="w-full mb-6 bg-orange-500 text-black py-2 rounded-xl font-black text-[9px] uppercase italic tracking-widest">× Clear All</button>
+              <button onClick={resetAllFilters} className="w-full mb-6 bg-orange-500 text-black py-2 rounded-xl font-black text-[9px] uppercase italic tracking-widest hover:bg-white transition-all shadow-lg">
+                × Clear All
+              </button>
             )}
 
-            {/* 各フィルター項目 (PCは最初から全表示・スマホはタップ) */}
             {[ {label: "Year", state: selectedYear, key: 'year', items: years, set: setSelectedYear},
                {label: "Genre", state: selectedGenre, key: 'genre', items: genres, set: setSelectedGenre},
                {label: "Format", state: selectedFormat, key: 'format', items: formats, set: setSelectedFormat}
@@ -75,32 +78,56 @@ export default function RankingPage() {
                   <span>{f.label}: {f.state}</span>
                   <span className="md:hidden">▼</span>
                 </button>
-                {/* PCでは常にblock、スマホではopenFilter === f.keyの時だけblock */}
-                <div className={`${openFilter === f.key ? 'block' : 'hidden'} md:block overflow-y-auto flex flex-col gap-1 no-scrollbar max-h-60 pt-2`}>
+                {/* Fix: md:flex md:flex-col を指定することで、PCでの横重なりを解消。
+                  スマホでは開いている時だけ flex、PCでは常に flex-col で表示。
+                */}
+                <div className={`${openFilter === f.key ? 'flex' : 'hidden'} md:flex flex-col gap-1 no-scrollbar overflow-y-auto max-h-60 pt-2`}>
                   {f.items.map(item => (
-                    <button key={item} onClick={() => { f.set(item); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic py-1 ${f.state === item ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 pl-0'}`}>{item}</button>
+                    <button 
+                      key={item} 
+                      onClick={() => { f.set(item); setOpenFilter(null); }} 
+                      className={`text-left text-[11px] font-black uppercase italic py-1 transition-colors ${f.state === item ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}
+                    >
+                      {item}
+                    </button>
                   ))}
                 </div>
               </div>
             ))}
           </aside>
 
-          {/* ランキングリスト: #順位の幅を w-8 に制限してスマホでも収まるように */}
+          {/* RANKING LIST */}
           <div className="flex-1 w-full space-y-3">
-            {filteredReviews.map((rev, index) => (
-              <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl">
-                <div className="text-xl md:text-4xl font-black italic text-gray-800 w-8 md:w-16 flex-none text-center leading-none">#{index + 1}</div>
-                <img src={rev.image} className="w-12 h-12 md:w-20 md:h-20 rounded-lg object-cover flex-none border border-white/5" alt="" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-xs md:text-xl uppercase italic truncate leading-tight group-hover:text-orange-500">{rev.title}</h3>
-                  <div className="flex gap-2 items-center mt-1">
-                    <p className="text-[8px] md:text-[10px] text-gray-600 font-bold uppercase truncate leading-none">{rev.artist}</p>
-                    <span className="text-[7px] text-gray-500 font-black">{rev.release_year}</span>
+            {filteredReviews.length === 0 ? (
+              <div className="py-20 text-center border-2 border-dashed border-gray-900 rounded-[2rem]">
+                <p className="text-gray-700 font-black italic uppercase text-xs">No digs matched your filter.</p>
+              </div>
+            ) : (
+              filteredReviews.map((rev, index) => (
+                <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
+                  {/* Rank number: スマホで縮めるために min-w を調整 */}
+                  <div className="text-xl md:text-4xl font-black italic text-gray-800 min-w-[2.5rem] md:min-w-[4rem] flex-none text-center leading-none">
+                    #{index + 1}
                   </div>
-                </div>
-                <div className="text-right flex-none"><div className="text-xl md:text-4xl font-black text-orange-500 italic leading-none">{rev.score.toFixed(1)}</div></div>
-              </Link>
-            ))}
+                  
+                  <img src={rev.image} className="w-12 h-12 md:w-20 md:h-20 rounded-lg object-cover flex-none border border-white/5" alt="" />
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-xs md:text-xl uppercase italic truncate leading-tight group-hover:text-orange-500 transition-colors">{rev.title}</h3>
+                    <div className="flex gap-2 items-center mt-1">
+                      <p className="text-[8px] md:text-[10px] text-gray-600 font-bold uppercase truncate">{rev.artist}</p>
+                      <span className="text-[7px] md:text-[8px] bg-gray-900 text-gray-500 px-1.5 py-0.5 rounded italic font-black flex-none leading-none">{rev.release_year}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right flex-none">
+                    <div className="text-xl md:text-4xl font-black text-orange-500 italic leading-none">
+                      {rev.score.toFixed(1)}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </div>
