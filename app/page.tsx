@@ -48,14 +48,34 @@ export default function Home() {
     .filter(rev => rev.title.toLowerCase().includes('ep'))
     .slice(0, 10);
 
-  // 5. THE SCENE / HIP-HOP (genreカラムに Hip Hop または Rap を含む)
+  // --- ジャンル別フィルター (THE SCENE シリーズ) ---
+
   const topHiphop = sortedByScore
     .filter(rev => rev.genre?.includes('Hip Hop') || rev.genre?.includes('Rap'))
     .slice(0, 10);
 
-  // 6. THE SCENE / ROCK (genreカラムに Rock を含む)
   const topRock = sortedByScore
     .filter(rev => rev.genre?.includes('Rock'))
+    .slice(0, 10);
+
+  const topRnB = sortedByScore
+    .filter(rev => rev.genre?.includes('R&B') || rev.genre?.includes('Soul'))
+    .slice(0, 10);
+
+  const topElectronic = sortedByScore
+    .filter(rev => rev.genre?.includes('Electronic') || rev.genre?.includes('Dance'))
+    .slice(0, 10);
+
+  const topJazz = sortedByScore
+    .filter(rev => rev.genre?.includes('Jazz'))
+    .slice(0, 10);
+
+  const topPop = sortedByScore
+    .filter(rev => rev.genre?.includes('Pop') && !rev.genre?.includes('J-Pop'))
+    .slice(0, 10);
+
+  const topJapanese = sortedByScore
+    .filter(rev => rev.genre?.includes('J-Pop') || rev.genre?.includes('Anime') || rev.genre?.includes('Japanese'))
     .slice(0, 10);
 
   if (isLoading) {
@@ -87,7 +107,7 @@ export default function Home() {
         ) : (
           <div className="space-y-32">
             
-            {/* --- SECTION 1: RECENT COLLECTION (Carousel Style) --- */}
+            {/* --- SECTION 1: RECENT COLLECTION --- */}
             <section className="relative">
               <div className="flex justify-between items-end mb-6">
                 <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500">Recent Collection</h2>
@@ -119,13 +139,19 @@ export default function Home() {
             {/* --- RANKING SECTIONS --- */}
             <RankingSection title="The Grails / LPs" data={topLPs} />
             <RankingSection title="Short Archive / EPs" data={topEPs} />
+            
+            {/* ジャンル別セクション */}
             <RankingSection title="The Scene / Hip-Hop" data={topHiphop} />
             <RankingSection title="The Scene / Rock" data={topRock} />
+            <RankingSection title="The Scene / R&B & Soul" data={topRnB} />
+            <RankingSection title="The Scene / Electronic" data={topElectronic} />
+            <RankingSection title="The Scene / Jazz" data={topJazz} />
+            <RankingSection title="The Scene / Pop" data={topPop} />
+            <RankingSection title="The Scene / Domestic" data={topJapanese} />
 
           </div>
         )}
 
-        {/* --- ORIGINAL FOOTER --- */}
         <footer className="mt-20 border-t border-gray-900 pt-10 flex gap-12 text-left">
           <div>
             <div className="text-3xl font-black text-white">{reviews.length}</div>
@@ -144,7 +170,6 @@ export default function Home() {
   );
 }
 
-// 既存のグリッドスタイルを継承したサブコンポーネント
 function RankingSection({ title, data }: { title: string, data: any[] }) {
   if (data.length === 0) return null;
   return (
