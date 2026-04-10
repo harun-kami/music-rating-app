@@ -9,9 +9,12 @@ export default function RankingPage() {
   const [filteredReviews, setFilteredReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // フィルター用ステート
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
   const [selectedFormat, setSelectedFormat] = useState<string>("ALL");
+
+  // どのドロップダウンが開いているか管理（PC・スマホ共通）
   const [openFilter, setOpenFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,12 +28,24 @@ export default function RankingPage() {
     fetchAll();
   }, []);
 
+  // フィルターロジック
   useEffect(() => {
     let result = [...reviews];
-    if (selectedYear !== "ALL") result = result.filter(r => r.release_year === selectedYear);
-    if (selectedGenre !== "ALL") result = result.filter(r => r.genre === selectedGenre);
-    if (selectedFormat === "EP") result = result.filter(r => r.title.toLowerCase().includes('ep'));
-    else if (selectedFormat === "LP") result = result.filter(r => !r.title.toLowerCase().includes('ep'));
+    
+    if (selectedYear !== "ALL") {
+      result = result.filter(r => r.release_year === selectedYear);
+    }
+    
+    if (selectedGenre !== "ALL") {
+      result = result.filter(r => r.genre === selectedGenre);
+    }
+
+    if (selectedFormat === "EP") {
+      result = result.filter(r => r.title.toLowerCase().includes('ep'));
+    } else if (selectedFormat === "LP") {
+      result = result.filter(r => !r.title.toLowerCase().includes('ep'));
+    }
+
     setFilteredReviews(result);
   }, [selectedYear, selectedGenre, selectedFormat, reviews]);
 
@@ -38,8 +53,16 @@ export default function RankingPage() {
   const genres = ["ALL", ...Array.from(new Set(reviews.map(r => r.genre).filter(Boolean))).sort()];
   const formats = ["ALL", "LP", "EP"];
 
-  const toggleDropdown = (name: string) => setOpenFilter(openFilter === name ? null : name);
-  const resetAllFilters = () => { setSelectedYear("ALL"); setSelectedGenre("ALL"); setSelectedFormat("ALL"); setOpenFilter(null); };
+  const toggleDropdown = (name: string) => {
+    setOpenFilter(openFilter === name ? null : name);
+  };
+
+  const resetAllFilters = () => {
+    setSelectedYear("ALL");
+    setSelectedGenre("ALL");
+    setSelectedFormat("ALL");
+    setOpenFilter(null);
+  };
 
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING RANKING...</div>;
 
@@ -57,11 +80,15 @@ export default function RankingPage() {
 
         <div className="flex flex-col md:flex-row gap-8 items-start">
           
-          {/* SIDEBAR FILTER: PCでは縦並び固定 / スマホではドロップダウン */}
+          {/* フィルターセクション: PC・スマホ共通でクリック開閉式 */}
           <aside className="w-full md:w-48 space-y-4 flex-none md:sticky md:top-12">
             
+            {/* 全リセットボタン */}
             {(selectedYear !== "ALL" || selectedGenre !== "ALL" || selectedFormat !== "ALL") && (
-              <button onClick={resetAllFilters} className="w-full mb-6 bg-orange-500 text-black py-2 rounded-xl font-black text-[9px] uppercase italic tracking-widest hover:bg-white transition-all shadow-lg">
+              <button 
+                onClick={resetAllFilters} 
+                className="w-full mb-6 bg-orange-500 text-black py-2 rounded-xl font-black text-[9px] uppercase italic tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+              >
                 × Clear All
               </button>
             )}
@@ -71,17 +98,17 @@ export default function RankingPage() {
                {label: "Format", state: selectedFormat, key: 'format', items: formats, set: setSelectedFormat}
             ].map(f => (
               <div key={f.key} className="border-b border-gray-900 pb-2">
+                {/* ラベル部分をクリックで開閉 */}
                 <button 
                   onClick={() => toggleDropdown(f.key)} 
-                  className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase italic py-2 md:cursor-default"
+                  className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase italic py-2 hover:text-white transition-colors"
                 >
                   <span>{f.label}: {f.state}</span>
-                  <span className="md:hidden">▼</span>
+                  <span className={`text-[8px] transition-transform duration-300 ${openFilter === f.key ? 'rotate-180' : ''}`}>▼</span>
                 </button>
-                {/* Fix: md:flex md:flex-col を指定することで、PCでの横重なりを解消。
-                  スマホでは開いている時だけ flex、PCでは常に flex-col で表示。
-                */}
-                <div className={`${openFilter === f.key ? 'flex' : 'hidden'} md:flex flex-col gap-1 no-scrollbar overflow-y-auto max-h-60 pt-2`}>
+                
+                {/* 選択肢リスト: openFilterの状態に応じて表示 */}
+                <div className={`overflow-y-auto transition-all duration-300 flex flex-col gap-1 no-scrollbar ${openFilter === f.key ? 'max-h-60 opacity-100 py-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                   {f.items.map(item => (
                     <button 
                       key={item} 
@@ -96,7 +123,7 @@ export default function RankingPage() {
             ))}
           </aside>
 
-          {/* RANKING LIST */}
+          {/* ランキングリスト: 順位表示の幅とはみ出しを修正 */}
           <div className="flex-1 w-full space-y-3">
             {filteredReviews.length === 0 ? (
               <div className="py-20 text-center border-2 border-dashed border-gray-900 rounded-[2rem]">
@@ -104,8 +131,12 @@ export default function RankingPage() {
               </div>
             ) : (
               filteredReviews.map((rev, index) => (
-                <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
-                  {/* Rank number: スマホで縮めるために min-w を調整 */}
+                <Link 
+                  href={`/review/${rev.id}`} 
+                  key={rev.id} 
+                  className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500"
+                >
+                  {/* 順位：min-wを設定して幅を固定、文字を収める */}
                   <div className="text-xl md:text-4xl font-black italic text-gray-800 min-w-[2.5rem] md:min-w-[4rem] flex-none text-center leading-none">
                     #{index + 1}
                   </div>
@@ -129,6 +160,7 @@ export default function RankingPage() {
               ))
             )}
           </div>
+
         </div>
       </div>
     </main>
