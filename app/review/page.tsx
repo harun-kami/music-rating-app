@@ -69,21 +69,22 @@ function ReviewContent() {
   };
 
   const handleSave = async () => {
-    setSaveStatus("SAVING...");
-    const cleanData = {
-      id: String(selectedAlbum.id),
-      artist_id: String(selectedAlbum.artistId),
-      title: selectedAlbum.title,
-      artist: selectedAlbum.artist,
-      image: selectedAlbum.image,
-      tracks: selectedAlbum.tracks,
-      ratings: ratings,
-      favorite_track: favoriteTrack,
-      score: parseFloat(calculateScoreDisplay()),
-      genre: selectedAlbum.genre || "Unknown"
-    };
+  setSaveStatus("SAVING...");
+  
+  const cleanData = {
+    id: String(selectedAlbum.id),
+    artist_id: String(selectedAlbum.artistId),
+    title: selectedAlbum.title,
+    artist: selectedAlbum.artist,
+    image: selectedAlbum.image,
+    tracks: selectedAlbum.tracks,
+    ratings: ratings,
+    favorite_track: favoriteTrack,
+    score: parseFloat(calculateScoreDisplay()),
+    genre: selectedAlbum.genre // ← これでデータベースに保存される！
+  };
 
-    const { error } = await supabase.from('reviews').upsert(cleanData);
+  const { error } = await supabase.from('reviews').upsert(cleanData);
     if (error) { setSaveStatus("ERROR! ❌"); } 
     else { setSaveStatus("SAVED! 🔥"); setTimeout(() => router.push('/'), 1500); }
   };

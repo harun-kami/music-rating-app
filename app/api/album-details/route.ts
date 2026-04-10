@@ -21,14 +21,16 @@ export async function GET(request: Request) {
     const albumInfo = data.results[0];
     const trackList = data.results.slice(1).map((track: any) => track.trackName);
 
-    return NextResponse.json({
-      id: String(albumInfo.collectionId),
-      name: albumInfo.collectionName,
-      artistName: albumInfo.artistName,
-      artistId: String(albumInfo.artistId),
-      image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
-      tracks: trackList
-    });
+    // /api/album-details/route.ts 内のイメージ
+return NextResponse.json({
+  id: String(albumInfo.collectionId),
+  name: albumInfo.collectionName,
+  artistName: albumInfo.artistName,
+  artistId: String(albumInfo.artistId),
+  image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
+  tracks: trackList,
+  genre: albumInfo.primaryGenreName, // ← ここでジャンルを渡す！
+});
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
