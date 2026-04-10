@@ -65,8 +65,7 @@ export default function Home() {
     title: "The Scene / J-Pop", 
     data: sortedByScore.filter(r => r.genre === 'J-Pop').slice(0, 5) 
   },
-    { title: "The Scene / Domestic", data: sortedByScore.filter(r => r.genre?.includes('J-Pop') || r.genre?.includes('Japanese')).slice(0, 5) }
-  ];
+];
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#121212] flex items-center justify-center">
