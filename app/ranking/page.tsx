@@ -12,7 +12,7 @@ export default function RankingPage() {
   // フィルター用ステート
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
-  const [selectedFormat, setSelectedFormat] = useState<string>("ALL"); // ALL, LP, EP
+  const [selectedFormat, setSelectedFormat] = useState<string>("ALL");
 
   // どのドロップダウンが開いているか管理
   const [openFilter, setOpenFilter] = useState<string | null>(null);
@@ -57,6 +57,14 @@ export default function RankingPage() {
     setOpenFilter(openFilter === name ? null : name);
   };
 
+  // 全リセット機能
+  const resetAllFilters = () => {
+    setSelectedYear("ALL");
+    setSelectedGenre("ALL");
+    setSelectedFormat("ALL");
+    setOpenFilter(null);
+  };
+
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING RANKING...</div>;
 
   return (
@@ -74,21 +82,31 @@ export default function RankingPage() {
 
         <div className="flex flex-col md:flex-row gap-12 items-start">
           
-          {/* LEFT SIDEBAR: ACCORDION FILTERS */}
-          <aside className="w-full md:w-56 space-y-4 flex-none sticky top-12">
+          {/* LEFT SIDEBAR: FILTERS */}
+          <aside className="w-full md:w-56 space-y-2 flex-none sticky top-12">
             
+            {/* --- RESET ALL BUTTON --- */}
+            {(selectedYear !== "ALL" || selectedGenre !== "ALL" || selectedFormat !== "ALL") && (
+              <button 
+                onClick={resetAllFilters}
+                className="w-full mb-6 bg-orange-500 text-black py-3 rounded-xl font-black text-[10px] uppercase italic tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+              >
+                × Clear All Filters
+              </button>
+            )}
+
             {/* YEAR FILTER */}
             <div className="border-b border-gray-900 pb-2">
               <button 
                 onClick={() => toggleDropdown('year')}
                 className="w-full flex justify-between items-center text-[10px] font-black text-orange-500 uppercase tracking-widest italic py-2"
               >
-                <span>Release Year: {selectedYear}</span>
+                <span>Year: {selectedYear}</span>
                 <span className={`transition-transform duration-300 ${openFilter === 'year' ? 'rotate-180' : ''}`}>▼</span>
               </button>
-              <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'year' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className={`overflow-y-auto transition-all duration-300 flex flex-col gap-1 no-scrollbar ${openFilter === 'year' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {years.map(year => (
-                  <button key={year} onClick={() => { setSelectedYear(year); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedYear === year ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{year}</button>
+                  <button key={year} onClick={() => { setSelectedYear(year); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic py-1 ${selectedYear === year ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}>{year}</button>
                 ))}
               </div>
             </div>
@@ -102,14 +120,14 @@ export default function RankingPage() {
                 <span>Genre: {selectedGenre}</span>
                 <span className={`transition-transform duration-300 ${openFilter === 'genre' ? 'rotate-180' : ''}`}>▼</span>
               </button>
-              <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'genre' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className={`overflow-y-auto transition-all duration-300 flex flex-col gap-1 no-scrollbar ${openFilter === 'genre' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {genres.map(genre => (
-                  <button key={genre} onClick={() => { setSelectedGenre(genre); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedGenre === genre ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{genre}</button>
+                  <button key={genre} onClick={() => { setSelectedGenre(genre); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic py-1 ${selectedGenre === genre ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}>{genre}</button>
                 ))}
               </div>
             </div>
 
-            {/* FORMAT FILTER (LP/EP) */}
+            {/* FORMAT FILTER */}
             <div className="border-b border-gray-900 pb-2">
               <button 
                 onClick={() => toggleDropdown('format')}
@@ -120,27 +138,19 @@ export default function RankingPage() {
               </button>
               <div className={`overflow-hidden transition-all duration-300 flex flex-col gap-1 ${openFilter === 'format' ? 'max-h-60 py-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {formats.map(format => (
-                  <button key={format} onClick={() => { setSelectedFormat(format); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic ${selectedFormat === format ? 'text-white' : 'text-gray-700 hover:text-gray-400'}`}>{format}</button>
+                  <button key={format} onClick={() => { setSelectedFormat(format); setOpenFilter(null); }} className={`text-left text-[11px] font-black uppercase italic py-1 ${selectedFormat === format ? 'text-white border-l-2 border-orange-500 pl-3' : 'text-gray-700 hover:text-gray-400 pl-0'}`}>{format}</button>
                 ))}
               </div>
             </div>
 
-            {/* RESET BUTTON */}
-            {(selectedYear !== "ALL" || selectedGenre !== "ALL" || selectedFormat !== "ALL") && (
-              <button 
-                onClick={() => { setSelectedYear("ALL"); setSelectedGenre("ALL"); setSelectedFormat("ALL"); }}
-                className="w-full mt-4 text-[8px] font-black text-gray-500 hover:text-orange-500 uppercase tracking-widest transition-colors text-left"
-              >
-                × Reset Filters
-              </button>
-            )}
           </aside>
 
           {/* RIGHT CONTENT: RANKING LIST */}
           <div className="flex-1 space-y-4">
             {filteredReviews.length === 0 ? (
-              <div className="py-20 text-center border-2 border-dashed border-gray-900 rounded-[2rem]">
+              <div className="py-20 text-center border-2 border-dashed border-gray-800 rounded-[2rem]">
                 <p className="text-gray-700 font-black italic uppercase text-xs">No digs matched your filter.</p>
+                <button onClick={resetAllFilters} className="mt-4 text-orange-500 font-black uppercase text-[10px] underline underline-offset-8">Clear all filters</button>
               </div>
             ) : (
               filteredReviews.map((rev, index) => (
