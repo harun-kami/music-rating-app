@@ -39,29 +39,45 @@ export default function Home() {
   const sortedByScore = [...reviews].sort((a, b) => b.score - a.score);
   const recentDigs = [...reviews].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   
+  // 1. 全体ランキング用のLPとEPの切り分け
   const topLPs = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep')).slice(0, 10);
   const topEPs = sortedByScore.filter(rev => rev.title.toLowerCase().includes('ep')).slice(0, 10);
+
+  // 2. ジャンル別ランキング用のソース（末尾が -EP または - EP のものを除外）
+  const genreFilteredLPs = sortedByScore.filter(rev => {
+    const lowerTitle = rev.title.toLowerCase();
+    return !lowerTitle.endsWith('-ep') && !lowerTitle.endsWith(' - ep');
+  });
 
   const genres = [
     { 
       title: "The Scene / Hip-Hop", 
-      data: sortedByScore.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) 
+      data: genreFilteredLPs.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) 
     },
     { 
       title: "The Scene / Rock", 
-      data: sortedByScore.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) 
+      data: genreFilteredLPs.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) 
     },
     { 
       title: "The Scene / R&B & Soul", 
-      data: sortedByScore.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) 
+      data: genreFilteredLPs.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) 
     },
     { 
       title: "The Scene / Electronic", 
-      data: sortedByScore.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) 
+      data: genreFilteredLPs.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) 
     },
-    { title: "The Scene / J-Hip Hop", data: sortedByScore.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) },
-    { title: "The Scene / J-Rock", data: sortedByScore.filter(r => r.genre === 'J-Rock').slice(0, 5) },
-    { title: "The Scene / J-Pop", data: sortedByScore.filter(r => r.genre === 'J-Pop').slice(0, 5) }
+    { 
+      title: "The Scene / J-Hip Hop", 
+      data: genreFilteredLPs.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) 
+    },
+    { 
+      title: "The Scene / J-Rock", 
+      data: genreFilteredLPs.filter(r => r.genre === 'J-Rock').slice(0, 5) 
+    },
+    { 
+      title: "The Scene / J-Pop", 
+      data: genreFilteredLPs.filter(r => r.genre === 'J-Pop').slice(0, 5) 
+    }
   ];
 
   if (isLoading) return (
@@ -81,7 +97,6 @@ export default function Home() {
             <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
           </div>
           <div className="flex gap-4">
-            {/* ヘッダーにもランキングへのリンクを追加 */}
             <Link href="/ranking" className="hidden md:flex border border-gray-800 hover:border-orange-500 text-gray-500 hover:text-orange-500 px-4 py-2 rounded-xl font-black text-[9px] transition-all items-center italic uppercase tracking-widest">Global Ranking</Link>
             <Link href="/review" className="bg-orange-500 hover:bg-white text-black px-4 py-2 rounded-xl font-black text-[10px] transition-all">+ NEW DIG</Link>
           </div>
@@ -124,7 +139,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* --- RANKING PAGE LINK BUTTON (新設：ランキングエリアの入り口) --- */}
+            {/* --- RANKING PAGE LINK BUTTON --- */}
             <div className="flex justify-end -mb-24">
               <Link href="/ranking" className="group flex items-center gap-4 bg-[#1a1a1a] border border-gray-800 hover:border-orange-500 p-4 rounded-2xl transition-all shadow-2xl">
                 <div className="text-right">
