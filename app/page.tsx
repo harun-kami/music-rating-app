@@ -9,18 +9,15 @@ export default function Home() {
   const [trends, setTrends] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // TypeScriptのエラーを回避するため、Refの型に | null を許容します
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const trendRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      // Reviews Fetch
       const { data: revData } = await supabase.from('reviews').select('*');
       setReviews(revData || []);
 
-      // Trends Fetch
       try {
         const res = await fetch('/api/trends');
         const trendData = await res.json();
@@ -28,13 +25,11 @@ export default function Home() {
       } catch (e) { 
         console.error("Trends fetch error:", e); 
       }
-      
       setIsLoading(false);
     };
     fetchData();
   }, []);
 
-  // 引数の型を React.RefObject<HTMLDivElement | null> に変更してエラーを解消
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
       ref.current.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
@@ -45,27 +40,43 @@ export default function Home() {
   const sortedByScore = [...reviews].sort((a, b) => b.score - a.score);
   const recentDigs = [...reviews].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   
+  // LP（タイトルに EP を含まない）と EP（含む）の切り分け
   const topLPs = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep')).slice(0, 10);
   const topEPs = sortedByScore.filter(rev => rev.title.toLowerCase().includes('ep')).slice(0, 10);
 
+  // ジャンル別ランキング（すべてから EP を除外）
+  const nonEPReviews = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep'));
+
   const genres = [
-    { title: "The Scene / Hip-Hop", data: sortedByScore.filter(r => r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')).slice(0, 5) },
-    { title: "The Scene / Rock", data: sortedByScore.filter(r => r.genre?.includes('Rock')).slice(0, 5) },
-    { title: "The Scene / R&B & Soul", data: sortedByScore.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) },
-    { title: "The Scene / Electronic", data: sortedByScore.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) },
     { 
-    title: "The Scene / J-Hip Hop", 
-    data: sortedByScore.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) 
-  },
-  { 
-    title: "The Scene / J-Rock", 
-    data: sortedByScore.filter(r => r.genre === 'J-Rock').slice(0, 5) 
-  },
-  { 
-    title: "The Scene / J-Pop", 
-    data: sortedByScore.filter(r => r.genre === 'J-Pop').slice(0, 5) 
-  },
-];
+      title: "The Scene / Hip-Hop", 
+      data: nonEPReviews.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) 
+    },
+    { 
+      title: "The Scene / Rock", 
+      data: nonEPReviews.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) 
+    },
+    { 
+      title: "The Scene / R&B & Soul", 
+      data: nonEPReviews.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) 
+    },
+    { 
+      title: "The Scene / Electronic", 
+      data: nonEPReviews.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) 
+    },
+    { 
+      title: "The Scene / J-Hip Hop", 
+      data: nonEPReviews.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) 
+    },
+    { 
+      title: "The Scene / J-Rock", 
+      data: nonEPReviews.filter(r => r.genre === 'J-Rock').slice(0, 5) 
+    },
+    { 
+      title: "The Scene / J-Pop", 
+      data: nonEPReviews.filter(r => r.genre === 'J-Pop').slice(0, 5) 
+    }
+  ];
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#121212] flex items-center justify-center">
@@ -112,7 +123,12 @@ export default function Home() {
                       </div>
                     </Link>
                     <h3 className="font-bold text-[9px] uppercase italic truncate mb-0.5">{rev.title}</h3>
-                    <p className="text-[8px] text-gray-600 font-bold uppercase truncate">{rev.artist}</p>
+                    {/* アーティストリンク復活 */}
+                    <Link href={`/artist/${rev.artist_id}`}>
+                      <p className="text-[8px] text-gray-600 hover:text-orange-500 font-bold uppercase truncate mb-1 transition-colors leading-none">
+                        {rev.artist}
+                      </p>
+                    </Link>
                     <span className="text-lg font-black text-orange-500 italic">{rev.score.toFixed(1)}</span>
                   </div>
                 ))}
@@ -153,7 +169,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 5. Genre Ranking (Top 5) */}
+            {/* 5. Genre Ranking (Top 5) - J-Genres are at the end */}
             <div className="space-y-24">
               {genres.map((g, idx) => (
                 <RankingSection key={idx} title={g.title} data={g.data} />
@@ -188,21 +204,26 @@ function RankingSection({ title, data }: { title: string, data: any[] }) {
       <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-8 text-left">{title}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
         {data.map((review, index) => (
-          <Link href={`/review/${review.id}`} key={review.id} className="group relative">
-            <div className="relative aspect-square mb-4 rounded-[1.5rem] overflow-hidden bg-gray-900 border border-gray-800 transition-all group-hover:border-orange-500 shadow-xl">
-              <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
-              <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md text-white w-7 h-7 flex items-center justify-center rounded-full font-black italic text-[9px] border border-white/10">
-                #{index + 1}
+          <div key={review.id} className="group relative">
+            <Link href={`/review/${review.id}`}>
+              <div className="relative aspect-square mb-4 rounded-[1.5rem] overflow-hidden bg-gray-900 border border-gray-800 transition-all group-hover:border-orange-500 shadow-xl">
+                <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md text-white w-7 h-7 flex items-center justify-center rounded-full font-black italic text-[9px] border border-white/10">
+                  #{index + 1}
+                </div>
+                <div className="absolute bottom-3 right-3 bg-orange-500 text-black font-black italic px-2 py-1 rounded-lg text-[9px] shadow-2xl translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                  {review.score.toFixed(1)}
+                </div>
               </div>
-              <div className="absolute bottom-3 right-3 bg-orange-500 text-black font-black italic px-2 py-1 rounded-lg text-[9px] shadow-2xl translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
-                {review.score.toFixed(1)}
-              </div>
-            </div>
-            <div className="px-2 text-left">
-              <h3 className="font-black text-[10px] uppercase italic truncate mb-1 group-hover:text-orange-500 transition-colors">{review.title}</h3>
-              <p className="text-[8px] text-gray-600 font-bold uppercase truncate">{review.artist}</p>
-            </div>
-          </Link>
+              <h3 className="px-2 font-black text-[10px] uppercase italic truncate mb-1 group-hover:text-orange-500 transition-colors">{review.title}</h3>
+            </Link>
+            {/* アーティストリンク復活 */}
+            <Link href={`/artist/${review.artist_id || review.artistId}`}>
+              <p className="px-2 text-[8px] text-gray-600 hover:text-orange-500 font-bold uppercase truncate transition-colors leading-none">
+                {review.artist}
+              </p>
+            </Link>
+          </div>
         ))}
       </div>
     </section>
