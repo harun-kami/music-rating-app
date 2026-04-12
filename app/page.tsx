@@ -34,24 +34,27 @@ export default function Home() {
     }
   };
 
+  // --- EP判定共通ロジック (末尾が -EP または - EP) ---
+  const isEP = (title: string) => {
+    const t = title.toLowerCase();
+    return t.endsWith('-ep') || t.endsWith(' - ep');
+  };
+
   const sortedByScore = [...reviews].sort((a, b) => b.score - a.score);
   const recentDigs = [...reviews].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const topLPs = sortedByScore.filter(rev => !rev.title.toLowerCase().includes('ep')).slice(0, 10);
-  const topEPs = sortedByScore.filter(rev => rev.title.toLowerCase().includes('ep')).slice(0, 10);
-
-  const genreFilteredLPs = sortedByScore.filter(rev => {
-    const lowerTitle = rev.title.toLowerCase();
-    return !lowerTitle.endsWith('-ep') && !lowerTitle.endsWith(' - ep');
-  });
+  
+  // 新しい判定ロジックを適用
+  const topEPs = sortedByScore.filter(rev => isEP(rev.title)).slice(0, 10);
+  const topLPs = sortedByScore.filter(rev => !isEP(rev.title)).slice(0, 10);
 
   const genres = [
-    { title: "The Scene / Hip-Hop", id: "hiphop", data: genreFilteredLPs.filter(r => (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) },
-    { title: "The Scene / Rock", id: "rock", data: genreFilteredLPs.filter(r => r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) },
-    { title: "The Scene / R&B & Soul", id: "rb", data: genreFilteredLPs.filter(r => r.genre?.includes('R&B') || r.genre?.includes('Soul')).slice(0, 5) },
-    { title: "The Scene / Electronic", id: "elec", data: genreFilteredLPs.filter(r => r.genre?.includes('Electronic') || r.genre?.includes('Dance')).slice(0, 5) },
-    { title: "The Scene / J-Hip Hop", id: "jhiphop", data: genreFilteredLPs.filter(r => r.genre === 'J-Hip Hop').slice(0, 5) },
-    { title: "The Scene / J-Rock", id: "jrock", data: genreFilteredLPs.filter(r => r.genre === 'J-Rock').slice(0, 5) },
-    { title: "The Scene / J-Pop", id: "jpop", data: genreFilteredLPs.filter(r => r.genre === 'J-Pop').slice(0, 5) }
+    { title: "The Scene / Hip-Hop", id: "hiphop", data: sortedByScore.filter(r => !isEP(r.title) && (r.genre?.includes('Hip Hop') || r.genre?.includes('Rap')) && !r.genre?.includes('J-')).slice(0, 5) },
+    { title: "The Scene / Rock", id: "rock", data: sortedByScore.filter(r => !isEP(r.title) && r.genre?.includes('Rock') && !r.genre?.includes('J-')).slice(0, 5) },
+    { title: "The Scene / R&B & Soul", id: "rb", data: sortedByScore.filter(r => !isEP(r.title) && (r.genre?.includes('R&B') || r.genre?.includes('Soul'))).slice(0, 5) },
+    { title: "The Scene / Electronic", id: "elec", data: sortedByScore.filter(r => !isEP(r.title) && (r.genre?.includes('Electronic') || r.genre?.includes('Dance'))).slice(0, 5) },
+    { title: "The Scene / J-Hip Hop", id: "jhiphop", data: sortedByScore.filter(r => !isEP(r.title) && r.genre === 'J-Hip Hop').slice(0, 5) },
+    { title: "The Scene / J-Rock", id: "jrock", data: sortedByScore.filter(r => !isEP(r.title) && r.genre === 'J-Rock').slice(0, 5) },
+    { title: "The Scene / J-Pop", id: "jpop", data: sortedByScore.filter(r => !isEP(r.title) && r.genre === 'J-Pop').slice(0, 5) }
   ];
 
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING ARCHIVE...</div>;
@@ -118,7 +121,6 @@ export default function Home() {
                 <span>{g.title}</span>
                 <span className={`text-[8px] transition-transform ${openGenre === g.id ? 'rotate-180' : ''}`}>▼</span>
               </button>
-
               <div className={`${openGenre === g.id ? 'block' : 'hidden'} md:block transition-all`}>
                 <RankingSection title={g.title} data={g.data} hideTitleOnMobile={true} />
               </div>
@@ -146,10 +148,7 @@ function RankingSection({ title, data, hideTitleOnMobile = false }: { title: str
             <Link href={`/review/${review.id}`}>
               <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl group-hover:border-orange-500 transition-all">
                 <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
-                {/* 順位：常に表示 */}
                 <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{index + 1}</div>
-                
-                {/* スコア：マウスを合わせた時だけ表示 (opacity-0 group-hover:opacity-100) */}
                 <div className="absolute bottom-2 right-2 bg-orange-500 text-black font-black italic px-1.5 py-0.5 rounded-lg text-[8px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-2xl">
                   {review.score.toFixed(1)}
                 </div>
