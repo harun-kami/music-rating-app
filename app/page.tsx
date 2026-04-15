@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation'; // 追加
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -10,7 +10,7 @@ export default function Home() {
   const [trends, setTrends] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openGenre, setOpenGenre] = useState<string | null>(null);
-  const router = useRouter(); // 追加
+  const router = useRouter();
   
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const trendRef = useRef<HTMLDivElement | null>(null);
@@ -19,16 +19,13 @@ export default function Home() {
     const fetchData = async () => {
       setIsLoading(true);
 
-      // --- 修正箇所: ログインユーザーの取得とフィルタリング ---
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        // ログインしていない場合はログイン画面へ
         router.push('/login');
         return;
       }
 
-      // 自分の user_id と一致するレビューのみを取得
       const { data: revData } = await supabase
         .from('reviews')
         .select('*')
@@ -52,7 +49,6 @@ export default function Home() {
     }
   };
 
-  // --- EP判定共通ロジック (末尾が -EP または - EP) ---
   const isEP = (title: string) => {
     const t = title.toLowerCase();
     return t.endsWith('-ep') || t.endsWith(' - ep');
@@ -61,7 +57,6 @@ export default function Home() {
   const sortedByScore = [...reviews].sort((a, b) => b.score - a.score);
   const recentDigs = [...reviews].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   
-  // 新しい判定ロジックを適用
   const topEPs = sortedByScore.filter(rev => isEP(rev.title)).slice(0, 10);
   const topLPs = sortedByScore.filter(rev => !isEP(rev.title)).slice(0, 10);
 
@@ -161,21 +156,27 @@ function RankingSection({ title, data, hideTitleOnMobile = false }: { title: str
     <section>
       <h2 className={`text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-8 ${hideTitleOnMobile ? 'hidden md:block' : 'block'}`}>{title}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
-        {data.map((review, index) => (
-          <div key={review.id} className="group relative">
-            <Link href={`/review/${review.id}`}>
-              <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl group-hover:border-orange-500 transition-all">
-                <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
-                <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{index + 1}</div>
-                <div className="absolute bottom-2 right-2 bg-orange-500 text-black font-black italic px-1.5 py-0.5 rounded-lg text-[8px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-2xl">
-                  {review.score.toFixed(1)}
+        {data.map((review, index) => {
+          // --- 修正箇所: スコアに基づいた同率順位を計算 ---
+          const displayRank = data.findIndex(r => r.score === review.score) + 1;
+          
+          return (
+            <div key={review.id} className="group relative">
+              <Link href={`/review/${review.id}`}>
+                <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl group-hover:border-orange-500 transition-all">
+                  <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                  {/* index + 1 ではなく displayRank を表示 */}
+                  <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{displayRank}</div>
+                  <div className="absolute bottom-2 right-2 bg-orange-500 text-black font-black italic px-1.5 py-0.5 rounded-lg text-[8px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-2xl">
+                    {review.score.toFixed(1)}
+                  </div>
                 </div>
-              </div>
-              <h3 className="px-1 font-black text-[9px] md:text-[10px] uppercase italic truncate mb-0.5 group-hover:text-orange-500 transition-colors">{review.title}</h3>
-            </Link>
-            <Link href={`/artist/${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{review.artist}</Link>
-          </div>
-        ))}
+                <h3 className="px-1 font-black text-[9px] md:text-[10px] uppercase italic truncate mb-0.5 group-hover:text-orange-500 transition-colors">{review.title}</h3>
+              </Link>
+              <Link href={`/artist/${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{review.artist}</Link>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

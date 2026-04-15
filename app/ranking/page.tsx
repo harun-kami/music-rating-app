@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // 追加
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -9,26 +9,23 @@ export default function RankingPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter(); // 追加
+  const router = useRouter();
 
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
   const [selectedFormat, setSelectedFormat] = useState<string>("ALL");
   const [openFilter, setOpenFilter] = useState<string | null>(null);
 
-  // --- 修正箇所: 自分の分だけ取得 ---
   useEffect(() => {
     const fetchAll = async () => {
       setIsLoading(true);
 
-      // ログインユーザー取得
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
       }
 
-      // 自分のデータのみを取得 (.eq('user_id', user.id))
       const { data } = await supabase
         .from('reviews')
         .select('*')
@@ -42,7 +39,6 @@ export default function RankingPage() {
     fetchAll();
   }, [router]);
 
-  // EP判定共通ロジック
   const isEP = (title: string) => {
     const t = title.toLowerCase();
     return t.endsWith('-ep') || t.endsWith(' - ep');
@@ -109,20 +105,26 @@ export default function RankingPage() {
             {filteredReviews.length === 0 ? (
               <div className="py-20 text-center border-2 border-dashed border-gray-800 rounded-[2rem]"><p className="text-gray-700 font-black italic uppercase text-xs">No digs matched your filter.</p></div>
             ) : (
-              filteredReviews.map((rev, index) => (
-                <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
-                  <div className="text-xl md:text-4xl font-black italic text-gray-800 min-w-[2.5rem] md:min-w-[4rem] flex-none text-center leading-none">#{index + 1}</div>
-                  <img src={rev.image} className="w-12 h-12 md:w-20 md:h-20 rounded-lg object-cover flex-none border border-white/5" alt="" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-xs md:text-xl uppercase italic truncate leading-tight group-hover:text-orange-500 transition-colors">{rev.title}</h3>
-                    <div className="flex gap-2 items-center mt-1">
-                      <p className="text-[8px] md:text-[10px] text-gray-600 font-bold uppercase truncate">{rev.artist}</p>
-                      <span className="text-[7px] md:text-[8px] bg-gray-900 text-gray-500 px-1.5 py-0.5 rounded italic font-black flex-none leading-none">{rev.release_year}</span>
+              filteredReviews.map((rev, index) => {
+                // --- 修正箇所: 同率順位の計算 ---
+                const displayRank = filteredReviews.findIndex(r => r.score === rev.score) + 1;
+
+                return (
+                  <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
+                    {/* index + 1 ではなく displayRank を表示 */}
+                    <div className="text-xl md:text-4xl font-black italic text-gray-800 min-w-[2.5rem] md:min-w-[4rem] flex-none text-center leading-none">#{displayRank}</div>
+                    <img src={rev.image} className="w-12 h-12 md:w-20 md:h-20 rounded-lg object-cover flex-none border border-white/5" alt="" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-xs md:text-xl uppercase italic truncate leading-tight group-hover:text-orange-500 transition-colors">{rev.title}</h3>
+                      <div className="flex gap-2 items-center mt-1">
+                        <p className="text-[8px] md:text-[10px] text-gray-600 font-bold uppercase truncate">{rev.artist}</p>
+                        <span className="text-[7px] md:text-[8px] bg-gray-900 text-gray-500 px-1.5 py-0.5 rounded italic font-black flex-none leading-none">{rev.release_year}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right flex-none"><div className="text-xl md:text-4xl font-black text-orange-500 italic leading-none">{rev.score.toFixed(1)}</div></div>
-                </Link>
-              ))
+                    <div className="text-right flex-none"><div className="text-xl md:text-4xl font-black text-orange-500 italic leading-none">{rev.score.toFixed(1)}</div></div>
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>
