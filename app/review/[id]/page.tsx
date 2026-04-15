@@ -38,8 +38,17 @@ export default function ReviewDetailPage() {
     return count === 0 ? "0.0" : ((pts / (count * 5)) * 10).toFixed(1);
   };
 
+  // --- 修正箇所: user_idを更新 ---
   const handleUpdate = async () => {
     setSaveStatus("SAVING...");
+    
+    // ログインユーザー取得
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaveStatus("LOGIN REQUIRED");
+      return;
+    }
+
     const cleanData = {
       id: String(review.id),
       artist_id: String(review.artist_id || review.artistId),
@@ -51,7 +60,8 @@ export default function ReviewDetailPage() {
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
       genre: review.genre || "Unknown",
-      release_year: review.release_year || "Unknown"
+      release_year: review.release_year || "Unknown",
+      user_id: user.id // ← user_idを保持
     };
     const { error } = await supabase.from('reviews').upsert(cleanData);
     if (error) { setSaveStatus("ERROR! ❌"); } 
@@ -67,7 +77,6 @@ export default function ReviewDetailPage() {
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
-        
         <header className="flex justify-between items-center mb-8 md:mb-10">
           <button onClick={() => router.back()} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back</button>
           <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
@@ -90,7 +99,6 @@ export default function ReviewDetailPage() {
         <div className="space-y-4 pb-20">
           {review.tracks.map((track: string, i: number) => (
             <div key={i} className="flex flex-col bg-[#1e1e1e]/50 rounded-2xl border border-gray-800 overflow-hidden transition-all">
-              {/* --- トラック行: スマホでは縦、PCでは横 --- */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 md:p-5 gap-4">
                 <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer group/item" onClick={() => toggleExpand(i)}>
                   <button onClick={(e) => { e.stopPropagation(); setFavoriteTrack(i === favoriteTrack ? null : i); }} className={`flex-none transition-all active:scale-125 ${favoriteTrack === i ? 'text-orange-500' : 'text-gray-700 hover:text-orange-500/50'}`}>
@@ -102,15 +110,12 @@ export default function ReviewDetailPage() {
                   </span>
                   <span className={`text-[7px] md:text-[8px] text-gray-700 transition-transform duration-300 ${expandedTrack === i ? 'rotate-180' : ''}`}>▼</span>
                 </div>
-                
-                {/* ランクボタン: スマホでは右寄せまたは均等に並べる */}
                 <div className="flex gap-1 md:gap-1.5 flex-none w-full sm:w-auto justify-between sm:justify-end">
                   {ranks.map(r => (
                     <button key={r} onClick={() => setRatings({...ratings, [i]: r})} className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl font-black border-2 transition-all text-[9px] md:text-[10px] ${ratings[i] === r ? 'bg-orange-500 text-black border-orange-500 scale-105 shadow-orange-500/30 shadow-lg' : 'border-gray-800 text-gray-500 hover:border-orange-500'}`}>{r}</button>
                   ))}
                 </div>
               </div>
-              
               <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-40 pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                 <div className="space-y-2 pt-3">
                   <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Producers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>

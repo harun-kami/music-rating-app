@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; // 追加
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -8,22 +9,38 @@ export default function RankingPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter(); // 追加
 
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
   const [selectedFormat, setSelectedFormat] = useState<string>("ALL");
   const [openFilter, setOpenFilter] = useState<string | null>(null);
 
+  // --- 修正箇所: 自分の分だけ取得 ---
   useEffect(() => {
     const fetchAll = async () => {
       setIsLoading(true);
-      const { data } = await supabase.from('reviews').select('*').order('score', { ascending: false });
+
+      // ログインユーザー取得
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      // 自分のデータのみを取得 (.eq('user_id', user.id))
+      const { data } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('score', { ascending: false });
+
       setReviews(data || []);
       setFilteredReviews(data || []);
       setIsLoading(false);
     };
     fetchAll();
-  }, []);
+  }, [router]);
 
   // EP判定共通ロジック
   const isEP = (title: string) => {
@@ -36,7 +53,6 @@ export default function RankingPage() {
     if (selectedYear !== "ALL") result = result.filter(r => r.release_year === selectedYear);
     if (selectedGenre !== "ALL") result = result.filter(r => r.genre === selectedGenre);
     
-    // Formatフィルターに厳格なロジックを適用
     if (selectedFormat === "EP") {
       result = result.filter(r => isEP(r.title));
     } else if (selectedFormat === "LP") {

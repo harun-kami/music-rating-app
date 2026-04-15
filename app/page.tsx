@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation'; // 追加
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -9,6 +10,7 @@ export default function Home() {
   const [trends, setTrends] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openGenre, setOpenGenre] = useState<string | null>(null);
+  const router = useRouter(); // 追加
   
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const trendRef = useRef<HTMLDivElement | null>(null);
@@ -16,8 +18,24 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      const { data: revData } = await supabase.from('reviews').select('*');
+
+      // --- 修正箇所: ログインユーザーの取得とフィルタリング ---
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        // ログインしていない場合はログイン画面へ
+        router.push('/login');
+        return;
+      }
+
+      // 自分の user_id と一致するレビューのみを取得
+      const { data: revData } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', user.id);
+      
       setReviews(revData || []);
+
       try {
         const res = await fetch('/api/trends');
         const trendData = await res.json();
@@ -26,7 +44,7 @@ export default function Home() {
       setIsLoading(false);
     };
     fetchData();
-  }, []);
+  }, [router]);
 
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
