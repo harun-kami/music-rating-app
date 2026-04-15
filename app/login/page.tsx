@@ -10,41 +10,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false); // モード切替用
   const router = useRouter();
 
-  // ログイン処理
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setMessage(`ERROR: ${error.message}`);
+    if (isSignUp) {
+      // 新規登録
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setMessage(`ERROR: ${error.message}`);
+      } else {
+        setMessage('ACCOUNT CREATED! LOGGING IN...');
+        // 登録後、そのままログインを試みる
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (!loginError) router.push('/');
+      }
     } else {
-      setMessage('ACCESS GRANTED. REDIRECTING...');
-      setTimeout(() => router.push('/'), 1000);
-    }
-    setLoading(false);
-  };
-
-  // 新規登録処理（アカウントがない人用）
-  const handleSignUp = async () => {
-    setLoading(true);
-    setMessage('');
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      setMessage(`ERROR: ${error.message}`);
-    } else {
-      setMessage('CHECK YOUR EMAIL FOR CONFIRMATION!');
+      // ログイン
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setMessage(`ERROR: ${error.message}`);
+      } else {
+        setMessage('ACCESS GRANTED. REDIRECTING...');
+        setTimeout(() => router.push('/'), 1000);
+      }
     }
     setLoading(false);
   };
@@ -55,18 +48,22 @@ export default function LoginPage() {
         
         {/* HEADER */}
         <div className="text-center">
-          <h1 className="text-4xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
-          <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-3">Authentication // Secure Archive</p>
+          <h1 className="text-4xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">
+            {isSignUp ? 'CREATE ARCHIVE' : 'MY DIGS.'}
+          </h1>
+          <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-3">
+            {isSignUp ? 'Setup your private library' : 'Authentication // Secure Archive'}
+          </p>
         </div>
 
-        <form onSubmit={handleSignIn} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-1">
             <p className="text-[10px] font-black text-gray-500 uppercase italic ml-2">Identify / Email</p>
             <input 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#1a1a1a] border-b-2 border-gray-800 p-4 font-black italic text-xl focus:outline-none focus:border-orange-500 transition-all"
+              className="w-full bg-[#1a1a1a] border-b-2 border-gray-800 p-4 font-black italic text-xl focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-900"
               placeholder="YOUR_EMAIL@EXAMPLE.COM"
               required
             />
@@ -78,7 +75,7 @@ export default function LoginPage() {
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#1a1a1a] border-b-2 border-gray-800 p-4 font-black italic text-xl focus:outline-none focus:border-orange-500 transition-all"
+              className="w-full bg-[#1a1a1a] border-b-2 border-gray-800 p-4 font-black italic text-xl focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-900"
               placeholder="••••••••"
               required
             />
@@ -96,16 +93,16 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-orange-500 hover:bg-white text-black py-5 rounded-2xl font-black italic text-sm tracking-widest transition-all active:scale-95 shadow-2xl"
             >
-              {loading ? 'CONNECTING...' : 'ENTER ARCHIVE →'}
+              {loading ? 'CONNECTING...' : (isSignUp ? 'CREATE ACCOUNT' : 'ENTER ARCHIVE →')}
             </button>
 
+            {/* ここでモードを切り替える */}
             <button 
               type="button"
-              onClick={handleSignUp}
-              disabled={loading}
+              onClick={() => { setIsSignUp(!isSignUp); setMessage(''); }}
               className="w-full text-gray-600 hover:text-white py-2 font-black text-[10px] uppercase tracking-widest transition-all italic"
             >
-              First time digging? Create Account
+              {isSignUp ? 'Already a digger? Login' : 'First time digging? Create Account'}
             </button>
           </div>
         </form>
