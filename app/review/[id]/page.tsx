@@ -10,6 +10,7 @@ export default function ReviewDetailPage() {
   const router = useRouter();
   const ranks = ["S", "A", "B", "C", "D", "-"];
   const [review, setReview] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [ratings, setRatings] = useState<{ [key: number]: string }>({});
   const [favoriteTrack, setFavoriteTrack] = useState<number | null>(null);
   const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
@@ -18,17 +19,35 @@ export default function ReviewDetailPage() {
 
   useEffect(() => {
     const fetchReview = async () => {
-      const { data } = await supabase.from('reviews').select('*').eq('id', id).single();
-      if (data) {
-        setReview(data);
-        setRatings(data.ratings || {});
-        setFavoriteTrack(data.favorite_track ?? null);
-      } else {
-        setErrorMsg("Review not found.");
+      setIsLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
       }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !data) {
+        console.error("Review not found or access denied");
+        setErrorMsg("Review not found.");
+      } else {
+        setReview(data);
+        // --- 重要: DBから取得した既存の点数とフェイバリットをセットする ---
+        setRatings(data.ratings || {});
+        setFavoriteTrack(data.favorite_track);
+      }
+      setIsLoading(false);
     };
+
     if (id) fetchReview();
-  }, [id]);
+  }, [id, router]);
 
   const calculateScoreDisplay = () => {
     if (!ratings || !review?.tracks) return "0.0";
@@ -38,11 +57,9 @@ export default function ReviewDetailPage() {
     return count === 0 ? "0.0" : ((pts / (count * 5)) * 10).toFixed(1);
   };
 
-  // --- 修正箇所: user_idを更新 ---
   const handleUpdate = async () => {
     setSaveStatus("SAVING...");
     
-    // ログインユーザー取得
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSaveStatus("LOGIN REQUIRED");
@@ -61,18 +78,28 @@ export default function ReviewDetailPage() {
       score: parseFloat(calculateScoreDisplay()),
       genre: review.genre || "Unknown",
       release_year: review.release_year || "Unknown",
-      user_id: user.id // ← user_idを保持
+      user_id: user.id 
     };
-    const { error } = await supabase.from('reviews').upsert(cleanData);
-    if (error) { setSaveStatus("ERROR! ❌"); } 
-    else { setSaveStatus("UPDATED! 🔥"); }
+
+    // --- 修正: id と user_id の両方で競合を判断するように指定 ---
+    const { error } = await supabase
+      .from('reviews')
+      .upsert(cleanData, { onConflict: 'id,user_id' });
+
+    if (error) { 
+      console.error(error);
+      setSaveStatus("ERROR! ❌"); 
+    } 
+    else { 
+      setSaveStatus("UPDATED! 🔥"); 
+    }
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
   const toggleExpand = (i: number) => setExpandedTrack(expandedTrack === i ? null : i);
 
-  if (errorMsg) return <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6 text-orange-500 font-black italic uppercase"><p className="mb-4">Digging Failed: {errorMsg}</p><Link href="/" className="bg-orange-500 text-black px-8 py-3 rounded-2xl font-black text-[10px]">Back</Link></div>;
-  if (!review) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">DIGGING...</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING DATA...</div>;
+  if (errorMsg || !review) return <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6 text-orange-500 font-black italic uppercase"><p className="mb-4">Digging Failed: {errorMsg || "Review not found"}</p><Link href="/" className="bg-orange-500 text-black px-8 py-3 rounded-2xl font-black text-[10px]">Back</Link></div>;
 
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans overflow-x-hidden text-left">
@@ -89,7 +116,7 @@ export default function ReviewDetailPage() {
               <h2 className="text-xl md:text-4xl font-black text-orange-500 uppercase italic leading-tight truncate tracking-tighter mb-1 md:mb-2">{review.title}</h2>
               <div className="flex items-center gap-3 md:gap-4">
                 <Link href={`/artist/${review.artist_id || review.artistId}`} className="text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase truncate transition-colors block">{review.artist}</Link>
-                <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none">SCORE: {calculateScoreDisplay()}</div>
+                <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none shadow-lg">SCORE: {calculateScoreDisplay()}</div>
               </div>
             </div>
           </div>
