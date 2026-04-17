@@ -95,7 +95,11 @@ function ReviewContent() {
       user_id: user.id // ← user_idを追加
     };
 
-    const { error } = await supabase.from('reviews').upsert(cleanData);
+    const { error } = await supabase
+  .from('reviews')
+  .upsert(cleanData, { 
+    onConflict: 'id,user_id' // ← ここを id だけじゃなく id,user_id にする
+  });
     if (error) { setSaveStatus("ERROR! ❌"); } 
     else { setSaveStatus("SAVED! 🔥"); setTimeout(() => router.push('/'), 1500); }
   };
