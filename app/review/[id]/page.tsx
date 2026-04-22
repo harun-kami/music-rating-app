@@ -19,6 +19,8 @@ export default function ReviewDetailPage() {
 
   // 公式解説用のステート
   const [editorial, setEditorial] = useState<any>(null);
+  // --- 追加: アルバム解説のアコーディオン開閉状態を管理 ---
+  const [expandedAlbumNote, setExpandedAlbumNote] = useState(false);
 
   useEffect(() => {
     const fetchReview = async () => {
@@ -47,7 +49,7 @@ export default function ReviewDetailPage() {
         setFavoriteTrack(data.favorite_track);
       }
 
-      // 2. 君が書いた「公式解説（エディトリアル）」を全員に向けて取得
+      // 2. 君が書いた「公式解説（エディトリアル）」を取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -133,10 +135,22 @@ export default function ReviewDetailPage() {
                 <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none shadow-lg">SCORE: {calculateScoreDisplay()}</div>
               </div>
               
-              {/* アルバムの公式解説（テキストがDBにある場合のみ表示） */}
+              {/* --- 変更箇所: アルバム公式解説をアコーディオン形式に変更 --- */}
               {editorial?.album_note && (
-                <div className="mt-4 text-[10px] md:text-xs text-gray-300 font-bold leading-relaxed pr-4 whitespace-pre-wrap opacity-90 border-t border-gray-800/50 pt-3">
-                  {editorial.album_note}
+                <div className="mt-4 border-t border-gray-800/50 pt-3">
+                  <button 
+                    onClick={() => setExpandedAlbumNote(!expandedAlbumNote)}
+                    className="flex items-center gap-2 text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase tracking-[0.2em] transition-colors focus:outline-none"
+                  >
+                    <span>Editorial Notes</span>
+                    <span className={`text-[7px] md:text-[8px] transition-transform duration-300 ${expandedAlbumNote ? 'rotate-180' : ''}`}>▼</span>
+                  </button>
+                  {/* 長文にも耐えられるように max-h-[1500px] を設定 */}
+                  <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedAlbumNote ? 'max-h-[1500px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+                    <div className="text-[10px] md:text-xs text-gray-300 font-bold leading-relaxed pr-4 whitespace-pre-wrap opacity-90 pb-2">
+                      {editorial.album_note}
+                    </div>
+                  </div>
                 </div>
               )}
 
