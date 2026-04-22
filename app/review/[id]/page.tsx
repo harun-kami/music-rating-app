@@ -76,7 +76,7 @@ export default function ReviewDetailPage() {
       ratings: ratings,
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
-      genre: review.genre || "Unknown",
+      genre: review.genre?.toUpperCase() === "HIP-HOP/RAP" ? "Hip Hop" : (review.genre || "Unknown"),
       release_year: review.release_year || "Unknown",
       user_id: user.id 
     };

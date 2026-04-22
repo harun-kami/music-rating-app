@@ -90,7 +90,7 @@ function ReviewContent() {
       ratings: ratings,
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
-      genre: selectedAlbum.genre || "Unknown",
+      genre: selectedAlbum.genre?.toUpperCase() === "Hip-Hop/Rap" ? "Hip Hop" : (selectedAlbum.genre || "Unknown"),
       release_year: selectedAlbum.release_year,
       user_id: user.id // ← user_idを追加
     };
