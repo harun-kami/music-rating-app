@@ -54,7 +54,7 @@ function ReviewContent() {
     if (!query) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=20&country=JP&lang=en_us`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=20&lang=ja_jp`);
       const data = await res.json();
       setResults(data.results || []);
     } catch (e) { console.error(e); }
