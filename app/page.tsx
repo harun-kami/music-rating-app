@@ -31,13 +31,11 @@ export default function Home() {
           .select('*') 
           .eq('user_id', user.id);
 
-        // --- 修正箇所: iTunesのデータを、君のUIが読める形（id, name, image）に変換する関数 ---
         const formatAlbumData = (results: any[]) => {
           return results.map(item => ({
             id: item.collectionId,
             name: item.collectionName,
             artist: item.artistName,
-            // 画質を美しくするために、100x100の画像を600x600に書き換えて取得
             image: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : ''
           }));
         };
@@ -45,7 +43,6 @@ export default function Home() {
         if (error || !reviews || reviews.length === 0) {
           const fallbackRes = await fetch(`https://itunes.apple.com/search?term=Hip+Hop&entity=album&limit=10&country=JP&lang=en_us`);
           const fallbackData = await fallbackRes.json();
-          // フォーマット関数を通す
           setTrends(formatAlbumData(fallbackData.results || []));
           setReviews([]);
           setIsLoading(false);
@@ -54,40 +51,39 @@ export default function Home() {
 
         setReviews(reviews);
 
-        // 一番聴いているジャンル（トップジャンル）を計算
-        const genreCounts: { [key: string]: number } = {};
-        reviews.forEach(r => {
-          const g = r.genre || "Hip Hop";
-          genreCounts[g] = (genreCounts[g] || 0) + 1;
-        });
-        const topGenre = Object.keys(genreCounts).reduce((a, b) => genreCounts[a] > genreCounts[b] ? a : b);
+        // 【STEP 1】君がガチで評価した（スコア4.0以上）のレビューだけを抽出
+        const highRatedReviews = reviews.filter(r => r.score >= 4.0);
+        
+        // もし高評価がまだなければ、全レビューを対象にする
+        const targetReviews = highRatedReviews.length > 0 ? highRatedReviews : reviews;
 
-        // 一番高得点を付けたアーティスト（お気に入り）を計算
-        let topArtist = reviews[0].artist;
-        let maxScore = -1;
-        reviews.forEach(r => {
-          if (r.score > maxScore) {
-            maxScore = r.score;
-            topArtist = r.artist;
+        // 【STEP 2】高評価アーティストのリストを作り、重複を消す
+        const favoriteArtists = Array.from(new Set(targetReviews.map(r => r.artist)));
+
+        // 【STEP 3】その中からランダムに 3〜4組 のアーティストをピックアップ
+        // ページを見るたびに、君の好きなアーティストの中から違う人が選ばれる
+        const shuffledArtists = favoriteArtists.sort(() => 0.5 - Math.random()).slice(0, 4);
+
+        // 【STEP 4】選ばれたアーティスト名ズバリで、それぞれのアルバムを3枚ずつ取得
+        const promises = shuffledArtists.map(artist => 
+          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&entity=album&limit=3&country=JP&lang=en_us`)
+            .then(res => res.json())
+        );
+
+        const results = await Promise.all(promises);
+
+        // データをフォーマットして一つの配列に合体
+        let recommendedAlbums: any[] = [];
+        results.forEach(data => {
+          if (data.results) {
+            recommendedAlbums.push(...formatAlbumData(data.results));
           }
         });
 
-        // iTunes APIに「8:2」の割合でデータを要求
-        const genreRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(topGenre)}&entity=album&limit=8&country=JP&lang=en_us`);
-        const genreData = await genreRes.json();
-        // フォーマット関数を通す
-        const genreAlbums = formatAlbumData(genreData.results || []);
+        // 最後に全体をシャッフルして、表示用（例えば10件）に絞る
+        const finalReleases = recommendedAlbums.sort(() => 0.5 - Math.random()).slice(0, 10);
 
-        const artistRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(topArtist)}&entity=album&limit=2&country=JP&lang=en_us`);
-        const artistData = await artistRes.json();
-        // フォーマット関数を通す
-        const artistAlbums = formatAlbumData(artistData.results || []);
-
-        // 合体させてシャッフル
-        const combinedReleases = [...genreAlbums, ...artistAlbums];
-        const shuffled = combinedReleases.sort(() => 0.5 - Math.random());
-
-        setTrends(shuffled);
+        setTrends(finalReleases);
 
       } catch (error) {
         console.error("Personalized fetch failed:", error);
