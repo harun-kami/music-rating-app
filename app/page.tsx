@@ -51,37 +51,55 @@ export default function Home() {
 
         setReviews(reviews);
 
-        // 【STEP 1】君がガチで評価した（スコア4.0以上）のレビューだけを抽出
+        // --- 追加: すでにレビュー済みのアルバムタイトルのリスト（小文字にして比較しやすくする） ---
+        const reviewedTitles = reviews.map(r => r.title.toLowerCase());
+
+        // 君が高評価（スコア4.0以上）を付けたレビューを抽出
         const highRatedReviews = reviews.filter(r => r.score >= 4.0);
-        
-        // もし高評価がまだなければ、全レビューを対象にする
         const targetReviews = highRatedReviews.length > 0 ? highRatedReviews : reviews;
 
-        // 【STEP 2】高評価アーティストのリストを作り、重複を消す
+        // 高評価アーティストのリストを作り、重複を消す
         const favoriteArtists = Array.from(new Set(targetReviews.map(r => r.artist)));
 
-        // 【STEP 3】その中からランダムに 3〜4組 のアーティストをピックアップ
-        // ページを見るたびに、君の好きなアーティストの中から違う人が選ばれる
+        // その中からランダムに 3〜4組 のアーティストをピックアップ
         const shuffledArtists = favoriteArtists.sort(() => 0.5 - Math.random()).slice(0, 4);
 
-        // 【STEP 4】選ばれたアーティスト名ズバリで、それぞれのアルバムを3枚ずつ取得
+        // 各アーティストのアルバムを多めに（10件ずつ）取得しておく（後で弾く分を考慮して多めに取る）
         const promises = shuffledArtists.map(artist => 
-          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&entity=album&limit=3&country=JP&lang=en_us`)
+          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&entity=album&limit=10&country=JP&lang=en_us`)
             .then(res => res.json())
         );
 
         const results = await Promise.all(promises);
 
-        // データをフォーマットして一つの配列に合体
         let recommendedAlbums: any[] = [];
         results.forEach(data => {
           if (data.results) {
-            recommendedAlbums.push(...formatAlbumData(data.results));
+            const formatted = formatAlbumData(data.results);
+            
+            // --- 修正箇所: ここで「レビュー済み」と「Single」を完全にシャットアウトする ---
+            const filtered = formatted.filter(album => {
+              const titleLower = album.name.toLowerCase();
+              
+              // 1. すでに君のアーカイブ（レビュー済み）に存在するか？
+              const isAlreadyReviewed = reviewedTitles.includes(titleLower);
+              
+              // 2. タイトルに Single が含まれているか？
+              const isSingle = titleLower.endsWith('- single') || titleLower.endsWith(' - single');
+              
+              // どちらにも当てはまらない、純粋な「未開拓のアルバム・EP」だけを通す
+              return !isAlreadyReviewed && !isSingle;
+            });
+
+            recommendedAlbums.push(...filtered);
           }
         });
 
+        // 重複しているアルバム（例えば別バージョンの同じアルバムなど）をIDで弾く
+        const uniqueRecommendations = Array.from(new Map(recommendedAlbums.map(album => [album.id, album])).values());
+
         // 最後に全体をシャッフルして、表示用（例えば10件）に絞る
-        const finalReleases = recommendedAlbums.sort(() => 0.5 - Math.random()).slice(0, 10);
+        const finalReleases = uniqueRecommendations.sort(() => 0.5 - Math.random()).slice(0, 10);
 
         setTrends(finalReleases);
 
