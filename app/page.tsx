@@ -177,7 +177,7 @@ export default function Home() {
         <RankingSection title="Short Archive / EPs" data={topEPs} />
 
         <section className="relative">
-          <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-6">New Release</h2>
+          <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-6">Go Deeper</h2>
           <div ref={trendRef} className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
             {trends.map((album) => (
               <Link href={`/review?id=${album.id}`} key={album.id} className="flex-none w-[160px] md:w-[180px] group">
