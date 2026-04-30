@@ -26,22 +26,32 @@ export default function Home() {
       }
 
       try {
-        // --- 修正箇所: トップページの他の項目も表示できるように「*」で全データを取得 ---
         const { data: reviews, error } = await supabase
           .from('reviews')
           .select('*') 
           .eq('user_id', user.id);
 
+        // --- 修正箇所: iTunesのデータを、君のUIが読める形（id, name, image）に変換する関数 ---
+        const formatAlbumData = (results: any[]) => {
+          return results.map(item => ({
+            id: item.collectionId,
+            name: item.collectionName,
+            artist: item.artistName,
+            // 画質を美しくするために、100x100の画像を600x600に書き換えて取得
+            image: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : ''
+          }));
+        };
+
         if (error || !reviews || reviews.length === 0) {
           const fallbackRes = await fetch(`https://itunes.apple.com/search?term=Hip+Hop&entity=album&limit=10&country=JP&lang=en_us`);
           const fallbackData = await fallbackRes.json();
-          setTrends(fallbackData.results || []); // 修正箇所: setTrends に変更
+          // フォーマット関数を通す
+          setTrends(formatAlbumData(fallbackData.results || []));
           setReviews([]);
           setIsLoading(false);
           return;
         }
 
-        // --- 修正箇所: 取得したレビューデータを全体のStateにセット（Recent Collectionなどに反映） ---
         setReviews(reviews);
 
         // 一番聴いているジャンル（トップジャンル）を計算
@@ -65,17 +75,18 @@ export default function Home() {
         // iTunes APIに「8:2」の割合でデータを要求
         const genreRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(topGenre)}&entity=album&limit=8&country=JP&lang=en_us`);
         const genreData = await genreRes.json();
-        const genreAlbums = genreData.results || [];
+        // フォーマット関数を通す
+        const genreAlbums = formatAlbumData(genreData.results || []);
 
         const artistRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(topArtist)}&entity=album&limit=2&country=JP&lang=en_us`);
         const artistData = await artistRes.json();
-        const artistAlbums = artistData.results || [];
+        // フォーマット関数を通す
+        const artistAlbums = formatAlbumData(artistData.results || []);
 
         // 合体させてシャッフル
         const combinedReleases = [...genreAlbums, ...artistAlbums];
         const shuffled = combinedReleases.sort(() => 0.5 - Math.random());
 
-        // 修正箇所: setTrends にシャッフルした結果を渡す
         setTrends(shuffled);
 
       } catch (error) {
@@ -85,7 +96,6 @@ export default function Home() {
       }
     };
 
-    // --- 修正箇所: fetchData(); ではなく、作った関数名で呼び出す ---
     fetchPersonalizedReleases();
   }, [router]);
 
