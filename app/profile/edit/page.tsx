@@ -109,7 +109,7 @@ export default function ProfileEditPage() {
     if (!albumQuery) return;
     setIsSearchingAlbum(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(albumQuery)}&entity=album&limit=6&country=JP`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(albumQuery)}&entity=album&limit=6&country=JP&lang=en_us`);
       const data = await res.json();
       const formatted = data.results.map((item: any) => ({
         id: item.collectionId,
