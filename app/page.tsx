@@ -103,7 +103,7 @@ export default function Home() {
 
         setTrends(finalReleases);
 
-      } catch (error) {
+        } catch (error) {
         console.error("Personalized fetch failed:", error);
       } finally {
         setIsLoading(false);
@@ -151,10 +151,22 @@ export default function Home() {
             <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
             <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
           </div>
-          <div className="flex gap-2">
+          
+          {/* --- 変更箇所: 右側のボタングループに極小の ID アイコンを追加 --- */}
+          <div className="flex items-center gap-2">
             <Link href="/ranking" className="flex border border-gray-800 hover:border-orange-500 text-gray-500 px-3 py-2 rounded-xl font-black text-[8px] md:text-[9px] transition-all items-center italic uppercase">Global Ranking</Link>
             <Link href="/review" className="bg-orange-500 text-black px-3 py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all">+ NEW DIG</Link>
+            
+            {/* ステルスなプロフィール導線 (王道ステルス) */}
+            <Link href="/profile" className="block group ml-1" aria-label="Identity Profile">
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center group-hover:border-orange-500 transition-all">
+                <span className="text-[7px] font-black tracking-tighter text-gray-600 group-hover:text-orange-500 transition-colors">
+                  ID
+                </span>
+              </div>
+            </Link>
           </div>
+          {/* ------------------------------------------------------------- */}
         </header>
 
         <section className="relative">
