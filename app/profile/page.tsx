@@ -1,21 +1,63 @@
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link'; // Link を追加
+"use client";
 
-// ダミーデータ
-const userData = {
-  name: "EVENSTILLDIGGIN",
-  image: "/profile-placeholder.png",
-  genres: ["BOOM BAP", "JAZZ RAP", "PHONK", "AMBIENT"],
-  artists: ["KANYE WEST", "KENDRICK LAMAR", "SABA", "MADLIB"],
-  trinity: [
-    { id: 1, title: "MBDTF", artist: "KANYE WEST", cover: "/covers/mbdtf.jpg" },
-    { id: 2, title: "TPAB", artist: "KENDRICK LAMAR", cover: "/covers/tpab.jpg" },
-    { id: 3, title: "CARE FOR ME", artist: "SABA", cover: "/covers/saba.jpg" },
-  ]
-};
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
-const ProfilePage = () => {
+export default function ProfilePage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<any>({
+    username: "UNNAMED",
+    genres: [],
+    artists: [],
+    trinity: [null, null, null]
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        // Supabase から自分のプロフィールデータを取得
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setProfile({
+            username: data.username || "UNNAMED",
+            genres: data.genres || [],
+            artists: data.artists || [],
+            trinity: data.trinity && data.trinity.length === 3 ? data.trinity : [null, null, null]
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center text-[#ff6b00] font-black italic animate-pulse tracking-widest text-xs uppercase">
+        SYNCING IDENTITY...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-[#ff6b00]">
       {/* 1. Header Area */}
@@ -30,16 +72,15 @@ const ProfilePage = () => {
           </div>
 
           {/* Username & Edit Link */}
-          <div className="flex flex-col justify-center text-center md:text-left flex-grow">
+          <div className="flex flex-col justify-center text-center md:text-left flex-grow w-full overflow-hidden">
             <div className="flex items-baseline justify-center md:justify-start gap-4">
-              <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-2">
-                {userData.name}.
+              <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-2 uppercase truncate max-w-full">
+                {profile.username}.
               </h1>
               
-              {/* --- 追加: 編集画面へのステルスなリンク --- */}
               <Link 
                 href="/profile/edit" 
-                className="text-[9px] font-bold tracking-[0.2em] text-[#444444] border border-[#1a1a1a] px-2 py-1 hover:text-[#ff6b00] hover:border-[#ff6b00] transition-all uppercase mb-2"
+                className="text-[9px] font-bold tracking-[0.2em] text-[#444444] border border-[#1a1a1a] px-2 py-1 hover:text-[#ff6b00] hover:border-[#ff6b00] transition-all uppercase mb-2 flex-shrink-0"
               >
                 Edit
               </Link>
@@ -58,11 +99,15 @@ const ProfilePage = () => {
               Favorite Genres
             </h3>
             <div className="flex flex-wrap gap-2">
-              {userData.genres.map((genre) => (
-                <span key={genre} className="text-xs font-medium tracking-widest text-[#888888] bg-[#0a0a0a] border border-[#1a1a1a] px-3 py-1">
-                  {genre}
-                </span>
-              ))}
+              {profile.genres.length > 0 ? (
+                profile.genres.map((genre: string) => (
+                  <span key={genre} className="text-xs font-medium tracking-widest text-[#888888] bg-[#0a0a0a] border border-[#1a1a1a] px-3 py-1">
+                    {genre}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-[#444444] tracking-widest uppercase italic">No genres assigned</span>
+              )}
             </div>
           </section>
 
@@ -71,11 +116,15 @@ const ProfilePage = () => {
               Core Artists
             </h3>
             <div className="flex flex-wrap gap-2">
-              {userData.artists.map((artist) => (
-                <span key={artist} className="text-xs font-medium tracking-widest text-[#888888] bg-[#0a0a0a] border border-[#1a1a1a] px-3 py-1">
-                  {artist}
-                </span>
-              ))}
+              {profile.artists.length > 0 ? (
+                profile.artists.map((artist: string) => (
+                  <span key={artist} className="text-xs font-medium tracking-widest text-[#888888] bg-[#0a0a0a] border border-[#1a1a1a] px-3 py-1">
+                    {artist}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-[#444444] tracking-widest uppercase italic">No artists assigned</span>
+              )}
             </div>
           </section>
         </div>
@@ -86,19 +135,30 @@ const ProfilePage = () => {
             — THE HOLY TRINITY —
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {userData.trinity.map((album) => (
-              <div key={album.id} className="group relative">
-                <div className="aspect-square w-full relative bg-[#121212] border border-[#1a1a1a] overflow-hidden group-hover:border-[#ff6b00] transition-all duration-500">
-                  <div className="w-full h-full flex items-center justify-center text-[#222222]">
-                     <span className="text-[10px] tracking-[0.5em] uppercase font-bold">Artwork</span>
+            {[0, 1, 2].map((index) => {
+              const album = profile.trinity[index];
+              return (
+                <div key={index} className="group relative text-left">
+                  <div className="aspect-square w-full relative bg-[#121212] border border-[#1a1a1a] overflow-hidden group-hover:border-[#ff6b00] transition-all duration-500">
+                    {album && album.cover ? (
+                      <img src={album.cover} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#222222]">
+                        <span className="text-[10px] tracking-[0.5em] uppercase font-bold">Empty Slot</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 opacity-80">
+                    <h4 className="text-[11px] font-black tracking-widest uppercase truncate text-white">
+                      {album ? album.title : `SLOT 0${index + 1}`}
+                    </h4>
+                    <p className="text-[9px] text-[#888888] tracking-widest uppercase truncate">
+                      {album ? album.artist : "UNASSIGNED"}
+                    </p>
                   </div>
                 </div>
-                <div className="mt-4 opacity-60">
-                  <h4 className="text-[11px] font-black tracking-widest uppercase truncate">{album.title}</h4>
-                  <p className="text-[9px] text-[#888888] tracking-widest uppercase">{album.artist}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -110,6 +170,4 @@ const ProfilePage = () => {
       </div>
     </div>
   );
-};
-
-export default ProfilePage;
+}
