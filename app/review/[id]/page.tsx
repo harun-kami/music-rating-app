@@ -93,7 +93,19 @@ export default function ReviewDetailPage() {
     if (!ratings || !review?.tracks) return "0.0";
     const rankMap: { [key: string]: number } = { "S": 5, "A": 4, "B": 3, "C": 2, "D": 1 };
     let pts = 0, count = 0;
-    Object.values(ratings).forEach(r => { if (r !== "-" && rankMap[r]) { pts += rankMap[r]; count++; } });
+
+    // ratingsの値を直接ループするのではなく、トラックのインデックスをベースに回す
+    review.tracks.forEach((_: any, i: number) => {
+      // ◆ 重要: Supabase側でこのトラック番号がロック対象に入っていたら、計算から完全に除外する
+      if (editorial?.locked_tracks?.includes(i)) return;
+
+      const r = ratings[i];
+      if (r && r !== "-" && rankMap[r]) { 
+        pts += rankMap[r]; 
+        count++; 
+      }
+    });
+
     return count === 0 ? "0.0" : ((pts / (count * 5)) * 10).toFixed(1);
   };
 
