@@ -70,7 +70,16 @@ export default function ProfilePage() {
          {/* Avatar */}
           <div className="relative w-32 h-32 md:w-40 md:h-40 border border-[#1a1a1a] rounded-full overflow-hidden bg-[#121212]">
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              /* Next.jsのImageコンポーネントではなく、標準のimgタグを使って確実に外部URLを表示する */
+              <img 
+                src={profile.avatar_url} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // 画像の読み込みに失敗した場合のフォールバック
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#444444]">
                 <span className="text-xs uppercase tracking-widest">No Image</span>
