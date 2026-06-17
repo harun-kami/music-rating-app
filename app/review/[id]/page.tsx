@@ -213,21 +213,14 @@ export default function ReviewDetailPage() {
                     </div>
                   )}
 
-                  {/* --- 変更: 平均値を算出するシングルメーター --- */}
+                  {/* シングルメーターとS〜Dの詳細なパーセンテージ表示 */}
                   {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (() => {
                     const stats = globalRatings[i];
                     const total = Object.values(stats).reduce((a, b) => a + b, 0);
-                    // S=5, A=4, B=3, C=2, D=1 で加重平均を出す
                     const totalPoints = (stats.S * 5) + (stats.A * 4) + (stats.B * 3) + (stats.C * 2) + (stats.D * 1);
                     const avgScore = total > 0 ? totalPoints / total : 0;
                     
-                    // 1〜5のスコアを0〜100%のメーター長さに変換
-                    // D(1) = 0%, S(5) = 100% とする
                     const fillPercentage = Math.max(0, Math.min(100, ((avgScore - 1) / 4) * 100));
-
-                    // 最も多い評価ランク（最頻値）を見つける
-                    const maxRank = Object.keys(stats).reduce((a, b) => stats[a as keyof typeof stats] > stats[b as keyof typeof stats] ? a : b);
-                    const maxPercent = Math.round((stats[maxRank as keyof typeof stats] / total) * 100);
 
                     return (
                       <div className="mt-5 pt-4 border-t border-gray-800/30">
@@ -238,28 +231,29 @@ export default function ReviewDetailPage() {
                           </span>
                         </div>
                         
-                        {/* 左から伸びるシングルメーター */}
-                        <div className="relative w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner flex flex-row-reverse">
-                          {/* SからDへの方向を視覚的に揃えるため、右から左へ伸びるようにする */}
-                          {/* いや、直感的には右に伸びる（メーターが満たされる）方がポテンシャルが高いと分かりやすいので、左から右へ */}
+                        {/* 左から右へ伸びるシングルメーター */}
+                        <div className="relative w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner">
                            <div 
                             style={{ width: `${fillPercentage}%` }} 
                             className="absolute left-0 top-0 h-full bg-[#ff6b00] transition-all duration-1000 ease-out"
                           />
                         </div>
                         
-                        {/* 目盛りとテキスト情報 */}
-                        <div className="flex justify-between mt-2 px-0.5">
-                          <span className="text-[7px] font-bold tracking-wider text-gray-700">D</span>
-                          <div className="text-[7px] font-bold tracking-wider text-gray-400">
-                             Majority: <span className="text-orange-500/80">{maxRank}</span> <span className="opacity-40">({maxPercent}%)</span>
-                          </div>
-                          <span className="text-[7px] font-bold tracking-wider text-gray-700">S</span>
+                        {/* 変更: S・A・B・C・D の % リスト表示 */}
+                        <div className="flex justify-between mt-2.5 px-0.5">
+                          {["S", "A", "B", "C", "D"].map((rank) => {
+                            const count = stats[rank as keyof typeof stats] || 0;
+                            const percent = Math.round((count / total) * 100);
+                            return (
+                              <div key={rank} className={`text-[7px] font-bold tracking-wider flex gap-1 ${percent > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
+                                <span>{rank}</span> <span className="opacity-40">{percent}%</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
                   })()}
-                  {/* ------------------------------------------------------------- */}
 
                 </div>
               </div>
