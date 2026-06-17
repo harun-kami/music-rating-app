@@ -8,11 +8,14 @@ import { supabase } from '@/lib/supabase';
 export default function ProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  
+  // --- 修正1: 初期状態に avatar_url を追加 ---
   const [profile, setProfile] = useState<any>({
     username: "UNNAMED",
     genres: [],
     artists: [],
-    trinity: [null, null, null]
+    trinity: [null, null, null],
+    avatar_url: null 
   });
 
   useEffect(() => {
@@ -25,7 +28,6 @@ export default function ProfilePage() {
       }
 
       try {
-        // Supabase から自分のプロフィールデータを取得
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -33,11 +35,13 @@ export default function ProfilePage() {
           .single();
 
         if (data) {
+          // --- 修正2: 取得したデータから avatar_url をセットする ---
           setProfile({
             username: data.username || "UNNAMED",
             genres: data.genres || [],
             artists: data.artists || [],
-            trinity: data.trinity && data.trinity.length === 3 ? data.trinity : [null, null, null]
+            trinity: data.trinity && data.trinity.length === 3 ? data.trinity : [null, null, null],
+            avatar_url: data.avatar_url || null // ← これが抜けていました！
           });
         }
       } catch (err) {
@@ -70,13 +74,11 @@ export default function ProfilePage() {
          {/* Avatar */}
           <div className="relative w-32 h-32 md:w-40 md:h-40 border border-[#1a1a1a] rounded-full overflow-hidden bg-[#121212]">
             {profile.avatar_url ? (
-              /* Next.jsのImageコンポーネントではなく、標準のimgタグを使って確実に外部URLを表示する */
               <img 
                 src={profile.avatar_url} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  // 画像の読み込みに失敗した場合のフォールバック
                   e.currentTarget.style.display = 'none';
                 }}
               />
