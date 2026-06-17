@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-// 定番ジャンルリスト（ここからクリックで選ぶだけでスペルミスゼロ）
 const AVAILABLE_GENRES = [
   "BOOM BAP", "JAZZ RAP", "TRAP", "PHONK", 
   "AMBIENT", "R&B", "SOUL", "ELECTRONIC", 
@@ -21,19 +20,21 @@ export default function ProfileEditPage() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [artists, setArtists] = useState<string[]>([]);
   const [trinity, setTrinity] = useState<(any | null)>([null, null, null]);
+  
+  // --- アイコン画像用の状態 ---
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // DBに保存されているURL
+  const [avatarFile, setAvatarFile] = useState<File | null>(null); // 選択されたファイル
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // 画面表示用のプレビュー
 
-  // アーティスト検索用状態
   const [artistQuery, setArtistQuery] = useState("");
   const [artistResults, setArtistResults] = useState<any[]>([]);
   const [isSearchingArtist, setIsSearchingArtist] = useState(false);
 
-  // アルバム検索用状態（The Trinity用）
   const [albumQuery, setAlbumQuery] = useState("");
   const [albumResults, setAlbumResults] = useState<any[]>([]);
   const [isSearchingAlbum, setIsSearchingAlbum] = useState(false);
-  const [activeSlot, setActiveSlot] = useState<number | null>(null); // 0, 1, 2
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
 
-  // 1. 既存のプロフィールデータをSupabaseから読み込む
   useEffect(() => {
     const fetchProfile = async () => {
       setIsFetching(true);
@@ -55,6 +56,7 @@ export default function ProfileEditPage() {
           setSelectedGenres(data.genres || []);
           setArtists(data.artists || []);
           setTrinity(data.trinity || [null, null, null]);
+          setAvatarUrl(data.avatar_url || null); // アイコンURLを取得
         }
       } catch (err) {
         console.error("Profile fetch error:", err);
@@ -65,7 +67,15 @@ export default function ProfileEditPage() {
     fetchProfile();
   }, [router]);
 
-  // 2. ジャンル選択のトグル処理
+  // --- 画像選択時の処理 ---
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setAvatarFile(file);
+    // 選択した画像をその場でプレビュー表示
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
   const toggleGenre = (genre: string) => {
     if (selectedGenres.includes(genre)) {
       setSelectedGenres(selectedGenres.filter(g => g !== genre));
@@ -74,13 +84,12 @@ export default function ProfileEditPage() {
     }
   };
 
-  // 3. アーティスト検索処理 (iTunes API)
   const handleSearchArtist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!artistQuery) return;
     setIsSearchingArtist(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistQuery)}&entity=musicArtist&limit=5&country=JP`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistQuery)}&entity=musicArtist&limit=5&country=JP&lang=en_us`);
       const data = await res.json();
       setArtistResults(data.results || []);
     } catch (err) {
@@ -103,7 +112,6 @@ export default function ProfileEditPage() {
     setArtists(artists.filter(a => a !== artistName));
   };
 
-  // 4. アルバム検索処理 (The Trinity用 - iTunes API)
   const handleSearchAlbum = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!albumQuery) return;
@@ -132,14 +140,41 @@ export default function ProfileEditPage() {
     setTrinity(newTrinity);
     setAlbumQuery("");
     setAlbumResults([]);
-    setActiveSlot(null); // 選択解除
+    setActiveSlot(null);
   };
 
-  // 5. Supabaseへの保存処理
   const handleSaveProfile = async () => {
     setIsLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    let finalAvatarUrl = avatarUrl;
+
+    // 画像が新しく選択されていたら、Storageへアップロード
+    if (avatarFile) {
+      const fileExt = avatarFile.name.split('.').pop();
+      // ファイル名はユーザーIDにして上書き保存されるようにする
+      const filePath = `${user.id}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, avatarFile, { upsert: true });
+
+      if (uploadError) {
+        console.error("Avatar upload failed:", uploadError);
+        alert("画像のアップロードに失敗しました。");
+        setIsLoading(false);
+        return;
+      }
+
+      // アップロードした画像の公開URLを取得
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // キャッシュ対策としてタイムスタンプを付与
+      finalAvatarUrl = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`;
+    }
 
     const profileData = {
       id: user.id,
@@ -147,26 +182,29 @@ export default function ProfileEditPage() {
       genres: selectedGenres,
       artists: artists,
       trinity: trinity,
+      avatar_url: finalAvatarUrl, // 画像URLを保存
       updated_at: new Date(),
     };
 
-    // profilesテーブルへ保存（なければ作成、あれば更新）
     const { error } = await supabase
       .from('profiles')
       .upsert(profileData);
 
     setIsLoading(false);
     if (!error) {
-      router.push('/profile'); // 保存完了したら閲覧画面へ戻る
+      router.push('/profile');
     } else {
       console.error("Save failed:", error);
-      alert("保存に失敗しました。データベースの設定を確認してください。");
+      alert("保存に失敗しました。");
     }
   };
 
   if (isFetching) {
     return <div className="min-h-screen bg-[#000000] flex items-center justify-center text-[#ff6b00] font-black italic animate-pulse">LOADING IDENTITY...</div>;
   }
+
+  // 表示する画像を決定（プレビュー優先、なければDBのURL）
+  const displayImage = avatarPreview || avatarUrl;
 
   return (
     <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-[#ff6b00]">
@@ -176,6 +214,31 @@ export default function ProfileEditPage() {
         </h1>
 
         <div className="space-y-12">
+          
+          {/* 1. Avatar / Icon Image */}
+          <div>
+            <label className="block text-[#444444] text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
+              Icon Image
+            </label>
+            <div className="flex items-center gap-6">
+              <div className="relative w-20 h-20 bg-[#121212] border border-[#1a1a1a] rounded-full flex items-center justify-center overflow-hidden">
+                {displayImage ? (
+                  <img src={displayImage} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[9px] text-[#444444] uppercase tracking-widest">Select</span>
+                )}
+              </div>
+              
+              {/* input type="file" はスマホで開くと自動でカメラかアルバムの選択肢が出る */}
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={handleImageChange}
+                className="text-xs text-[#888888] file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-medium file:bg-[#121212] file:text-[#ff6b00] hover:file:bg-[#1a1a1a] cursor-pointer transition-colors"
+              />
+            </div>
+          </div>
+
           {/* Account Name */}
           <div>
             <label className="block text-[#444444] text-[10px] font-bold tracking-[0.2em] uppercase mb-2">
@@ -190,7 +253,7 @@ export default function ProfileEditPage() {
             />
           </div>
 
-          {/* Favorite Genres (クリックで選択するバッジ式) */}
+          {/* Favorite Genres */}
           <div>
             <label className="block text-[#444444] text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
               Favorite Genres <span className="text-[#888888]">(Tap to select)</span>
@@ -216,13 +279,11 @@ export default function ProfileEditPage() {
             </div>
           </div>
 
-          {/* Core Artists (検索して追加するシステム) */}
+          {/* Core Artists */}
           <div>
             <label className="block text-[#444444] text-[10px] font-bold tracking-[0.2em] uppercase mb-2">
               Core Artists <span className="text-[#888888]">(Search & Add)</span>
             </label>
-            
-            {/* 選択済みアーティスト一覧 */}
             <div className="flex flex-wrap gap-2 mb-4">
               {artists.map((artist) => (
                 <span key={artist} className="bg-[#121212] border border-[#ff6b00] text-white text-xs px-3 py-1 flex items-center gap-2">
@@ -231,8 +292,6 @@ export default function ProfileEditPage() {
                 </span>
               ))}
             </div>
-
-            {/* 検索バー */}
             <form onSubmit={handleSearchArtist} className="flex gap-2">
               <input 
                 type="text" 
@@ -245,8 +304,6 @@ export default function ProfileEditPage() {
                 {isSearchingArtist ? '...' : 'FIND'}
               </button>
             </form>
-
-            {/* 検索結果サジェスト */}
             {artistResults.length > 0 && (
               <div className="mt-2 border border-[#1a1a1a] bg-[#121212] divide-y divide-[#1a1a1a]">
                 {artistResults.map((item) => (
@@ -265,13 +322,11 @@ export default function ProfileEditPage() {
             )}
           </div>
 
-          {/* The Trinity Selection (検索して登録するシステム) */}
+          {/* The Trinity Selection */}
           <div>
             <label className="block text-[#ff6b00] text-[10px] font-bold tracking-[0.3em] uppercase mb-4">
               The Holy Trinity <span className="text-[#888888]">(Tap slot to assign)</span>
             </label>
-            
-            {/* 3つのスロット */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {[0, 1, 2].map((index) => {
                 const album = trinity[index];
@@ -287,7 +342,6 @@ export default function ProfileEditPage() {
                     <span className="text-[9px] text-[#444444] tracking-widest font-bold block">
                       SLOT 0{index + 1} {isActive && <span className="text-[#ff6b00]">// ACTIVE</span>}
                     </span>
-
                     {album ? (
                       <div className="text-center my-auto">
                         <img src={album.cover} alt="" className="w-20 h-20 mx-auto object-cover mb-2 border border-[#333]" />
@@ -301,7 +355,6 @@ export default function ProfileEditPage() {
                         </span>
                       </div>
                     )}
-
                     <span className="text-[9px] text-[#444444] tracking-widest text-right block group-hover:text-[#ff6b00] transition-colors">
                       {album ? 'CHANGE ↗' : 'ASSIGN ↗'}
                     </span>
@@ -309,8 +362,6 @@ export default function ProfileEditPage() {
                 );
               })}
             </div>
-
-            {/* スロット選択時に現れるアルバム検索エリア */}
             {activeSlot !== null && (
               <div className="p-4 bg-[#121212] border border-[#ff6b00]">
                 <span className="text-[9px] text-[#ff6b00] font-bold tracking-widest block mb-2 uppercase">
@@ -328,8 +379,6 @@ export default function ProfileEditPage() {
                     {isSearchingAlbum ? '...' : 'SEARCH'}
                   </button>
                 </form>
-
-                {/* アルバム検索結果 */}
                 {albumResults.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-1">
                     {albumResults.map((item) => (

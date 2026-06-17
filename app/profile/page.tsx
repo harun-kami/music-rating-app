@@ -67,11 +67,15 @@ export default function ProfilePage() {
         </Link>
         <div className="flex flex-col items-center md:items-start md:flex-row gap-8 mb-16">
           
-          {/* Avatar */}
+         {/* Avatar */}
           <div className="relative w-32 h-32 md:w-40 md:h-40 border border-[#1a1a1a] rounded-full overflow-hidden bg-[#121212]">
-            <div className="w-full h-full flex items-center justify-center text-[#444444]">
-              <span className="text-xs uppercase tracking-widest">No Image</span>
-            </div>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[#444444]">
+                <span className="text-xs uppercase tracking-widest">No Image</span>
+              </div>
+            )}
           </div>
 
           {/* Username & Edit Link */}
