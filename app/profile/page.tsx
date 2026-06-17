@@ -62,6 +62,9 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-[#ff6b00]">
       {/* 1. Header Area */}
       <div className="max-w-4xl mx-auto pt-16 px-6">
+        <Link href="/" className="inline-block text-[#444444] hover:text-[#ff6b00] text-[10px] font-bold tracking-widest uppercase mb-12 transition-colors">
+          ← BACK TO HOME
+        </Link>
         <div className="flex flex-col items-center md:items-start md:flex-row gap-8 mb-16">
           
           {/* Avatar */}
