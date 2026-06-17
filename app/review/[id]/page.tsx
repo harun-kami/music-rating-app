@@ -213,7 +213,7 @@ export default function ReviewDetailPage() {
                     </div>
                   )}
 
-                  {/* シングルメーターとS〜Dの詳細なパーセンテージ表示 */}
+                  {/* シングルメーターとD〜Sの詳細なパーセンテージ表示 */}
                   {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (() => {
                     const stats = globalRatings[i];
                     const total = Object.values(stats).reduce((a, b) => a + b, 0);
@@ -239,9 +239,9 @@ export default function ReviewDetailPage() {
                           />
                         </div>
                         
-                        {/* 変更: S・A・B・C・D の % リスト表示 */}
+                        {/* 変更: D・C・B・A・S の並び順で % リスト表示 */}
                         <div className="flex justify-between mt-2.5 px-0.5">
-                          {["S", "A", "B", "C", "D"].map((rank) => {
+                          {["D", "C", "B", "A", "S"].map((rank) => {
                             const count = stats[rank as keyof typeof stats] || 0;
                             const percent = Math.round((count / total) * 100);
                             return (
