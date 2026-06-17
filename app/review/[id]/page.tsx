@@ -19,8 +19,11 @@ export default function ReviewDetailPage() {
 
   // 公式解説用のステート
   const [editorial, setEditorial] = useState<any>(null);
-  // --- 追加: アルバム解説のアコーディオン開閉状態を管理 ---
   const [expandedAlbumNote, setExpandedAlbumNote] = useState(false);
+
+  // --- 追加: 全ユーザーの評価分布を保存するステート ---
+  const [globalRatings, setGlobalRatings] = useState<{ [key: number]: { S: number, A: number, B: number, C: number, D: number } }>({});
+  // ------------------------------------------------
 
   useEffect(() => {
     const fetchReview = async () => {
@@ -47,9 +50,35 @@ export default function ReviewDetailPage() {
         setReview(data);
         setRatings(data.ratings || {});
         setFavoriteTrack(data.favorite_track);
+
+        // --- 追加: 全ユーザーの同じアルバムの評価を集計する ---
+        const { data: allReviews } = await supabase
+          .from('reviews')
+          .select('ratings')
+          .eq('title', data.title)
+          .eq('artist', data.artist);
+
+        if (allReviews) {
+          const agg: any = {};
+          allReviews.forEach((rev: any) => {
+            if (rev.ratings) {
+              Object.entries(rev.ratings).forEach(([tIdx, rank]) => {
+                const idx = Number(tIdx);
+                if (rank !== "-") {
+                  if (!agg[idx]) agg[idx] = { S: 0, A: 0, B: 0, C: 0, D: 0 };
+                  if (agg[idx][rank as string] !== undefined) {
+                    agg[idx][rank as string]++;
+                  }
+                }
+              });
+            }
+          });
+          setGlobalRatings(agg);
+        }
+        // --------------------------------------------------
       }
 
-      // 2. 君が書いた「公式解説（エディトリアル）」を取得
+      // 2. 公式解説（エディトリアル）を取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -135,7 +164,6 @@ export default function ReviewDetailPage() {
                 <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none shadow-lg">SCORE: {calculateScoreDisplay()}</div>
               </div>
               
-              {/* --- 変更箇所: アルバム公式解説をアコーディオン形式に変更 --- */}
               {editorial?.album_note && (
                 <div className="mt-4 border-t border-gray-800/50 pt-3">
                   <button 
@@ -145,7 +173,6 @@ export default function ReviewDetailPage() {
                     <span>Editorial Notes</span>
                     <span className={`text-[7px] md:text-[8px] transition-transform duration-300 ${expandedAlbumNote ? 'rotate-180' : ''}`}>▼</span>
                   </button>
-                  {/* 長文にも耐えられるように max-h-[1500px] を設定 */}
                   <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedAlbumNote ? 'max-h-[1500px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
                     <div className="text-[10px] md:text-xs text-gray-300 font-bold leading-relaxed pr-4 whitespace-pre-wrap opacity-90 pb-2">
                       {editorial.album_note}
@@ -153,7 +180,6 @@ export default function ReviewDetailPage() {
                   </div>
                 </div>
               )}
-
             </div>
           </div>
           <button onClick={handleUpdate} className="w-full md:w-auto px-10 py-4 md:py-5 bg-orange-500 text-black rounded-2xl font-black transition-all active:scale-95 shadow-xl text-xs md:text-base md:self-center">{saveStatus || "UPDATE DIG"}</button>
@@ -180,19 +206,68 @@ export default function ReviewDetailPage() {
                 </div>
               </div>
               
-              <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-96 pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+              <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-[800px] pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                 <div className="space-y-4 pt-3">
                   <div className="space-y-2">
                     <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Producers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
                     <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Writers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
                   </div>
                   
-                  {/* 曲の公式解説（テキストがDBにある場合のみ表示） */}
                   {editorial?.track_notes?.[i] && (
                     <div className="mt-3 text-[10px] md:text-[11px] text-gray-400 font-bold leading-relaxed border-l-2 border-orange-500/50 pl-3 whitespace-pre-wrap italic">
                       {editorial.track_notes[i]}
                     </div>
                   )}
+
+                  {/* --- 追加: 他ユーザーの評価分布 (一度自分が評価した曲のみ表示) --- */}
+                  {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (
+                    <div className="mt-5 pt-4 border-t border-gray-800/30">
+                      <div className="flex justify-between items-end mb-2.5">
+                        <span className="text-[8px] md:text-[9px] text-orange-500/40 font-black italic uppercase tracking-[0.2em]">Global Stats</span>
+                        <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">
+                          {Object.values(globalRatings[i]).reduce((a, b) => a + b, 0)} Ratings
+                        </span>
+                      </div>
+                      
+                      {/* 分布バー（S〜Dにかけてオレンジのグラデーション） */}
+                      <div className="w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden flex shadow-inner">
+                        {["S", "A", "B", "C", "D"].map((rank, idx) => {
+                          const count = globalRatings[i][rank as keyof typeof globalRatings[0]] || 0;
+                          const total = Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) || 1;
+                          const percent = (count / total) * 100;
+                          if (percent === 0) return null;
+                          
+                          // 評価が下がるにつれてオレンジの不透明度を下げる
+                          const opacities = ["bg-[#ff6b00]", "bg-[#ff6b00]/80", "bg-[#ff6b00]/60", "bg-[#ff6b00]/40", "bg-[#ff6b00]/20"];
+                          
+                          return (
+                            <div 
+                              key={rank} 
+                              style={{ width: `${percent}%` }} 
+                              className={`h-full ${opacities[idx]} border-r border-black/50 last:border-0 transition-all duration-1000`}
+                              title={`${rank}: ${Math.round(percent)}%`}
+                            />
+                          );
+                        })}
+                      </div>
+                      
+                      {/* パーセンテージ数値表示 */}
+                      <div className="flex justify-between mt-2 px-0.5">
+                        {["S", "A", "B", "C", "D"].map((rank) => {
+                          const count = globalRatings[i][rank as keyof typeof globalRatings[0]] || 0;
+                          const total = Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) || 1;
+                          const percent = Math.round((count / total) * 100);
+                          
+                          return (
+                            <div key={rank} className={`text-[7px] font-bold tracking-wider ${percent > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
+                              {rank} <span className="opacity-40">{percent}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {/* ------------------------------------------------------------- */}
 
                 </div>
               </div>
