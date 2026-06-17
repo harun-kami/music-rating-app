@@ -20,7 +20,6 @@ export default function ReviewDetailPage() {
   const [editorial, setEditorial] = useState<any>(null);
   const [expandedAlbumNote, setExpandedAlbumNote] = useState(false);
 
-  // 全ユーザーの評価分布を保存するステート
   const [globalRatings, setGlobalRatings] = useState<{ [key: number]: { S: number, A: number, B: number, C: number, D: number } }>({});
 
   useEffect(() => {
@@ -73,6 +72,7 @@ export default function ReviewDetailPage() {
         }
       }
 
+      // 公式解説（エディトリアル）とロック指定を取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -180,85 +180,107 @@ export default function ReviewDetailPage() {
         </div>
 
         <div className="space-y-4 pb-20">
-          {review.tracks.map((track: string, i: number) => (
-            <div key={i} className="flex flex-col bg-[#1e1e1e]/50 rounded-2xl border border-gray-800 overflow-hidden transition-all">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 md:p-5 gap-4">
-                <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer group/item" onClick={() => toggleExpand(i)}>
-                  <button onClick={(e) => { e.stopPropagation(); setFavoriteTrack(i === favoriteTrack ? null : i); }} className={`flex-none transition-all active:scale-125 ${favoriteTrack === i ? 'text-orange-500' : 'text-gray-700 hover:text-orange-500/50'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-6 md:h-6"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" /></svg>
-                  </button>
-                  <span className="font-bold text-xs md:text-sm truncate uppercase tracking-tight leading-none min-w-0">
-                    <span className="text-orange-500/50 mr-2 md:mr-3 italic font-black">{(i+1).toString().padStart(2, '0')}</span>
-                    <span className="group-hover/item:text-orange-500 transition-colors">{track}</span>
-                  </span>
-                  <span className={`text-[7px] md:text-[8px] text-gray-700 transition-transform duration-300 ${expandedTrack === i ? 'rotate-180' : ''}`}>▼</span>
-                </div>
-                <div className="flex gap-1 md:gap-1.5 flex-none w-full sm:w-auto justify-between sm:justify-end">
-                  {ranks.map(r => (
-                    <button key={r} onClick={() => setRatings({...ratings, [i]: r})} className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl font-black border-2 transition-all text-[9px] md:text-[10px] ${ratings[i] === r ? 'bg-orange-500 text-black border-orange-500 scale-105 shadow-orange-500/30 shadow-lg' : 'border-gray-800 text-gray-500 hover:border-orange-500'}`}>{r}</button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-[800px] pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                <div className="space-y-4 pt-3">
-                  <div className="space-y-2">
-                    <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Producers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
-                    <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Writers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
+          {review.tracks.map((track: string, i: number) => {
+            // --- 変更: データベースの値を見てロック判定を行う ---
+            // editorial.locked_tracks の中に現在のインデックス(i)が含まれていればロック
+            const isLocked = editorial?.locked_tracks?.includes(i) || false;
+            // ------------------------------------------------
+
+            return (
+              <div key={i} className={`flex flex-col rounded-2xl border overflow-hidden transition-all ${isLocked ? 'bg-[#121212] border-gray-900/50 opacity-60' : 'bg-[#1e1e1e]/50 border-gray-800'}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 md:p-5 gap-4">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer group/item" onClick={() => toggleExpand(i)}>
+                    <button 
+                      disabled={isLocked}
+                      onClick={(e) => { e.stopPropagation(); setFavoriteTrack(i === favoriteTrack ? null : i); }} 
+                      className={`flex-none transition-all ${isLocked ? 'text-gray-800 cursor-not-allowed' : favoriteTrack === i ? 'text-orange-500 active:scale-125' : 'text-gray-700 hover:text-orange-500/50 active:scale-125'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-6 md:h-6"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" /></svg>
+                    </button>
+                    
+                    <span className="font-bold text-xs md:text-sm truncate uppercase tracking-tight leading-none min-w-0">
+                      <span className="text-orange-500/50 mr-2 md:mr-3 italic font-black">{(i+1).toString().padStart(2, '0')}</span>
+                      <span className={`${isLocked ? 'text-gray-600' : 'group-hover/item:text-orange-500 transition-colors'}`}>{track}</span>
+                    </span>
+                    <span className={`text-[7px] md:text-[8px] text-gray-700 transition-transform duration-300 ${expandedTrack === i ? 'rotate-180' : ''}`}>▼</span>
                   </div>
                   
-                  {editorial?.track_notes?.[i] && (
-                    <div className="mt-3 text-[10px] md:text-[11px] text-gray-400 font-bold leading-relaxed border-l-2 border-orange-500/50 pl-3 whitespace-pre-wrap italic">
-                      {editorial.track_notes[i]}
+                  <div className="flex gap-1 md:gap-1.5 flex-none w-full sm:w-auto justify-between sm:justify-end">
+                    {ranks.map(r => (
+                      <button 
+                        key={r} 
+                        disabled={isLocked}
+                        onClick={() => setRatings({...ratings, [i]: r})} 
+                        className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl font-black border-2 transition-all text-[9px] md:text-[10px] 
+                          ${isLocked 
+                            ? 'border-gray-900 text-gray-800 cursor-not-allowed bg-transparent' 
+                            : ratings[i] === r 
+                              ? 'bg-orange-500 text-black border-orange-500 scale-105 shadow-orange-500/30 shadow-lg' 
+                              : 'border-gray-800 text-gray-500 hover:border-orange-500'}`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-[800px] pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                  <div className="space-y-4 pt-3">
+                    <div className="space-y-2">
+                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Producers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
+                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Writers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
                     </div>
-                  )}
-
-                  {/* シングルメーターとD〜Sの詳細なパーセンテージ表示 */}
-                  {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (() => {
-                    const stats = globalRatings[i];
-                    const total = Object.values(stats).reduce((a, b) => a + b, 0);
-                    const totalPoints = (stats.S * 5) + (stats.A * 4) + (stats.B * 3) + (stats.C * 2) + (stats.D * 1);
-                    const avgScore = total > 0 ? totalPoints / total : 0;
                     
-                    const fillPercentage = Math.max(0, Math.min(100, ((avgScore - 1) / 4) * 100));
-
-                    return (
-                      <div className="mt-5 pt-4 border-t border-gray-800/30">
-                        <div className="flex justify-between items-end mb-2.5">
-                          <span className="text-[8px] md:text-[9px] text-orange-500/40 font-black italic uppercase tracking-[0.2em]">Avg. Potential</span>
-                          <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">
-                            {total} Ratings
-                          </span>
-                        </div>
-                        
-                        {/* 左から右へ伸びるシングルメーター */}
-                        <div className="relative w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner">
-                           <div 
-                            style={{ width: `${fillPercentage}%` }} 
-                            className="absolute left-0 top-0 h-full bg-[#ff6b00] transition-all duration-1000 ease-out"
-                          />
-                        </div>
-                        
-                        {/* 変更: D・C・B・A・S の並び順で % リスト表示 */}
-                        <div className="flex justify-between mt-2.5 px-0.5">
-                          {["D", "C", "B", "A", "S"].map((rank) => {
-                            const count = stats[rank as keyof typeof stats] || 0;
-                            const percent = Math.round((count / total) * 100);
-                            return (
-                              <div key={rank} className={`text-[7px] font-bold tracking-wider flex gap-1 ${percent > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
-                                <span>{rank}</span> <span className="opacity-40">{percent}%</span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                    {editorial?.track_notes?.[i] && (
+                      <div className="mt-3 text-[10px] md:text-[11px] text-gray-400 font-bold leading-relaxed border-l-2 border-orange-500/50 pl-3 whitespace-pre-wrap italic">
+                        {editorial.track_notes[i]}
                       </div>
-                    );
-                  })()}
+                    )}
 
+                    {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (() => {
+                      const stats = globalRatings[i];
+                      const total = Object.values(stats).reduce((a, b) => a + b, 0);
+                      const totalPoints = (stats.S * 5) + (stats.A * 4) + (stats.B * 3) + (stats.C * 2) + (stats.D * 1);
+                      const avgScore = total > 0 ? totalPoints / total : 0;
+                      
+                      const fillPercentage = Math.max(0, Math.min(100, ((avgScore - 1) / 4) * 100));
+
+                      return (
+                        <div className="mt-5 pt-4 border-t border-gray-800/30">
+                          <div className="flex justify-between items-end mb-2.5">
+                            <span className="text-[8px] md:text-[9px] text-orange-500/40 font-black italic uppercase tracking-[0.2em]">Avg. Potential</span>
+                            <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">
+                              {total} Ratings
+                            </span>
+                          </div>
+                          
+                          <div className="relative w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner">
+                             <div 
+                              style={{ width: `${fillPercentage}%` }} 
+                              className="absolute left-0 top-0 h-full bg-[#ff6b00] transition-all duration-1000 ease-out"
+                            />
+                          </div>
+                          
+                          <div className="flex justify-between mt-2.5 px-0.5">
+                            {["D", "C", "B", "A", "S"].map((rank) => {
+                              const count = stats[rank as keyof typeof stats] || 0;
+                              const percent = Math.round((count / total) * 100);
+                              return (
+                                <div key={rank} className={`text-[7px] font-bold tracking-wider flex gap-1 ${percent > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
+                                  <span>{rank}</span> <span className="opacity-40">{percent}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </main>
