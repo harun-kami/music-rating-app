@@ -11,9 +11,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [openGenre, setOpenGenre] = useState<string | null>(null);
   
-  // --- 追加: サイドメニューの開閉状態を管理するState ---
+  // サイドメニューの開閉状態を管理するState
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // --------------------------------------------------
   
   const router = useRouter();
   
@@ -133,28 +132,37 @@ export default function Home() {
         <div className="max-w-6xl mx-auto space-y-20 md:space-y-32">
           
           <header className="flex justify-between items-center mb-8">
-            <div className="text-left">
-              <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
-              <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
+            {/* --- 左側エリア: メニューボタン ＋ ロゴ --- */}
+            <div className="flex items-center gap-4 md:gap-5">
+              <button 
+                onClick={() => setIsMenuOpen(true)} 
+                className="group flex flex-col gap-1.5 focus:outline-none p-1" 
+                aria-label="Open Menu"
+              >
+                {/* 極小の2本線でメニューを表現（ホバーでオレンジに） */}
+                <span className="w-5 h-0.5 bg-gray-600 group-hover:bg-orange-500 transition-colors duration-300"></span>
+                <span className="w-5 h-0.5 bg-gray-600 group-hover:bg-orange-500 transition-colors duration-300"></span>
+              </button>
+
+              <div className="text-left">
+                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
+                <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
+              </div>
             </div>
             
+            {/* --- 右側エリア: ランキング / 新規 / IDアイコン --- */}
             <div className="flex items-center gap-2">
               <Link href="/ranking" className="flex border border-gray-800 hover:border-orange-500 text-gray-500 px-3 py-2 rounded-xl font-black text-[8px] md:text-[9px] transition-all items-center italic uppercase">Global Ranking</Link>
               <Link href="/review" className="bg-orange-500 text-black px-3 py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all">+ NEW DIG</Link>
               
-              {/* --- 変更箇所: LinkではなくButtonにして、メニューを開くトリガーに変更 --- */}
-              <button 
-                onClick={() => setIsMenuOpen(true)} 
-                className="block group ml-1 focus:outline-none" 
-                aria-label="Open Menu"
-              >
+              {/* IDアイコンは元の「プロフィールへ飛ぶリンク」に戻す */}
+              <Link href="/profile" className="block group ml-1" aria-label="Identity Profile">
                 <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center group-hover:border-orange-500 transition-all">
                   <span className="text-[7px] font-black tracking-tighter text-gray-600 group-hover:text-orange-500 transition-colors">
                     ID
                   </span>
                 </div>
-              </button>
-              {/* ------------------------------------------------------------- */}
+              </Link>
             </div>
           </header>
 
@@ -219,16 +227,14 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- 追加: スライドインするサイドメニュー --- */}
+      {/* スライドインするサイドメニュー（変更なし） */}
       <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         
-        {/* 背景の暗幕（クリックで閉じる） */}
         <div 
           className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
           onClick={() => setIsMenuOpen(false)} 
         />
 
-        {/* 左からスライドしてくる黒いパネル */}
         <div className={`absolute top-0 left-0 h-full w-64 md:w-72 bg-[#050505] border-r border-[#1a1a1a] transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           
           <div className="p-6 md:p-8 flex justify-between items-center border-b border-[#1a1a1a]">
@@ -260,7 +266,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* -------------------------------------- */}
     </>
   );
 }
