@@ -17,13 +17,11 @@ export default function ReviewDetailPage() {
   const [saveStatus, setSaveStatus] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 公式解説用のステート
   const [editorial, setEditorial] = useState<any>(null);
   const [expandedAlbumNote, setExpandedAlbumNote] = useState(false);
 
-  // --- 追加: 全ユーザーの評価分布を保存するステート ---
+  // 全ユーザーの評価分布を保存するステート
   const [globalRatings, setGlobalRatings] = useState<{ [key: number]: { S: number, A: number, B: number, C: number, D: number } }>({});
-  // ------------------------------------------------
 
   useEffect(() => {
     const fetchReview = async () => {
@@ -35,7 +33,6 @@ export default function ReviewDetailPage() {
         return;
       }
 
-      // 1. 個人のレビューデータを取得
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
@@ -51,7 +48,6 @@ export default function ReviewDetailPage() {
         setRatings(data.ratings || {});
         setFavoriteTrack(data.favorite_track);
 
-        // --- 追加: 全ユーザーの同じアルバムの評価を集計する ---
         const { data: allReviews } = await supabase
           .from('reviews')
           .select('ratings')
@@ -75,10 +71,8 @@ export default function ReviewDetailPage() {
           });
           setGlobalRatings(agg);
         }
-        // --------------------------------------------------
       }
 
-      // 2. 公式解説（エディトリアル）を取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -219,54 +213,52 @@ export default function ReviewDetailPage() {
                     </div>
                   )}
 
-                  {/* --- 追加: 他ユーザーの評価分布 (一度自分が評価した曲のみ表示) --- */}
-                  {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (
-                    <div className="mt-5 pt-4 border-t border-gray-800/30">
-                      <div className="flex justify-between items-end mb-2.5">
-                        <span className="text-[8px] md:text-[9px] text-orange-500/40 font-black italic uppercase tracking-[0.2em]">Global Stats</span>
-                        <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">
-                          {Object.values(globalRatings[i]).reduce((a, b) => a + b, 0)} Ratings
-                        </span>
+                  {/* --- 変更: 平均値を算出するシングルメーター --- */}
+                  {ratings[i] && ratings[i] !== "-" && globalRatings[i] && Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) > 0 && (() => {
+                    const stats = globalRatings[i];
+                    const total = Object.values(stats).reduce((a, b) => a + b, 0);
+                    // S=5, A=4, B=3, C=2, D=1 で加重平均を出す
+                    const totalPoints = (stats.S * 5) + (stats.A * 4) + (stats.B * 3) + (stats.C * 2) + (stats.D * 1);
+                    const avgScore = total > 0 ? totalPoints / total : 0;
+                    
+                    // 1〜5のスコアを0〜100%のメーター長さに変換
+                    // D(1) = 0%, S(5) = 100% とする
+                    const fillPercentage = Math.max(0, Math.min(100, ((avgScore - 1) / 4) * 100));
+
+                    // 最も多い評価ランク（最頻値）を見つける
+                    const maxRank = Object.keys(stats).reduce((a, b) => stats[a as keyof typeof stats] > stats[b as keyof typeof stats] ? a : b);
+                    const maxPercent = Math.round((stats[maxRank as keyof typeof stats] / total) * 100);
+
+                    return (
+                      <div className="mt-5 pt-4 border-t border-gray-800/30">
+                        <div className="flex justify-between items-end mb-2.5">
+                          <span className="text-[8px] md:text-[9px] text-orange-500/40 font-black italic uppercase tracking-[0.2em]">Avg. Potential</span>
+                          <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">
+                            {total} Ratings
+                          </span>
+                        </div>
+                        
+                        {/* 左から伸びるシングルメーター */}
+                        <div className="relative w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner flex flex-row-reverse">
+                          {/* SからDへの方向を視覚的に揃えるため、右から左へ伸びるようにする */}
+                          {/* いや、直感的には右に伸びる（メーターが満たされる）方がポテンシャルが高いと分かりやすいので、左から右へ */}
+                           <div 
+                            style={{ width: `${fillPercentage}%` }} 
+                            className="absolute left-0 top-0 h-full bg-[#ff6b00] transition-all duration-1000 ease-out"
+                          />
+                        </div>
+                        
+                        {/* 目盛りとテキスト情報 */}
+                        <div className="flex justify-between mt-2 px-0.5">
+                          <span className="text-[7px] font-bold tracking-wider text-gray-700">D</span>
+                          <div className="text-[7px] font-bold tracking-wider text-gray-400">
+                             Majority: <span className="text-orange-500/80">{maxRank}</span> <span className="opacity-40">({maxPercent}%)</span>
+                          </div>
+                          <span className="text-[7px] font-bold tracking-wider text-gray-700">S</span>
+                        </div>
                       </div>
-                      
-                      {/* 分布バー（S〜Dにかけてオレンジのグラデーション） */}
-                      <div className="w-full h-1.5 md:h-2 bg-gray-900 rounded-full overflow-hidden flex shadow-inner">
-                        {["S", "A", "B", "C", "D"].map((rank, idx) => {
-                          const count = globalRatings[i][rank as keyof typeof globalRatings[0]] || 0;
-                          const total = Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) || 1;
-                          const percent = (count / total) * 100;
-                          if (percent === 0) return null;
-                          
-                          // 評価が下がるにつれてオレンジの不透明度を下げる
-                          const opacities = ["bg-[#ff6b00]", "bg-[#ff6b00]/80", "bg-[#ff6b00]/60", "bg-[#ff6b00]/40", "bg-[#ff6b00]/20"];
-                          
-                          return (
-                            <div 
-                              key={rank} 
-                              style={{ width: `${percent}%` }} 
-                              className={`h-full ${opacities[idx]} border-r border-black/50 last:border-0 transition-all duration-1000`}
-                              title={`${rank}: ${Math.round(percent)}%`}
-                            />
-                          );
-                        })}
-                      </div>
-                      
-                      {/* パーセンテージ数値表示 */}
-                      <div className="flex justify-between mt-2 px-0.5">
-                        {["S", "A", "B", "C", "D"].map((rank) => {
-                          const count = globalRatings[i][rank as keyof typeof globalRatings[0]] || 0;
-                          const total = Object.values(globalRatings[i]).reduce((a, b) => a + b, 0) || 1;
-                          const percent = Math.round((count / total) * 100);
-                          
-                          return (
-                            <div key={rank} className={`text-[7px] font-bold tracking-wider ${percent > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
-                              {rank} <span className="opacity-40">{percent}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   {/* ------------------------------------------------------------- */}
 
                 </div>
