@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import SidebarMenu from '@/components/SidebarMenu'; // ← これを追加！
 
 export default function Home() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -13,9 +14,7 @@ export default function Home() {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  // --- 追加: プロフィール画像URLを保持するState ---
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  // --------------------------------------------------
 
   const router = useRouter();
   
@@ -33,7 +32,6 @@ export default function Home() {
       }
 
       try {
-        // --- 追加: プロフィール情報を取得して画像URLをセット ---
         const { data: profileData } = await supabase
           .from('profiles')
           .select('avatar_url')
@@ -43,7 +41,6 @@ export default function Home() {
         if (profileData && profileData.avatar_url) {
           setAvatarUrl(profileData.avatar_url);
         }
-        // -----------------------------------------------------
 
         const { data: reviews, error } = await supabase
           .from('reviews')
@@ -146,23 +143,33 @@ export default function Home() {
       <main className="min-h-screen bg-[#121212] text-white p-4 md:p-8 font-sans overflow-x-hidden text-left pt-12 md:pt-8">
         <div className="max-w-6xl mx-auto space-y-20 md:space-y-32">
           
-          {/* 既存のheader部分をこれに差し替え */}
-<header className="flex justify-between items-center mb-8">
-  <div className="flex items-center gap-4 md:gap-5">
-    {/* 共通メニューを置くだけ */}
-    <SidebarMenu />
+          <header className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-4 md:gap-5">
+              <SidebarMenu />
 
-    <div className="text-left">
-      <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
-      <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
-    </div>
-  </div>
-  
-  {/* 右側のランキング、NEW DIG、IDアイコンの塊はそのまま */}
-  <div className="flex items-center gap-2">
-    ...
-  </div>
-</header>
+              <div className="text-left">
+                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
+                <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Link href="/ranking" className="flex border border-gray-800 hover:border-orange-500 text-gray-500 px-3 py-2 rounded-xl font-black text-[8px] md:text-[9px] transition-all items-center italic uppercase">Global Ranking</Link>
+              <Link href="/review" className="bg-orange-500 text-black px-3 py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all">+ NEW DIG</Link>
+              
+              <Link href="/profile" className="block group ml-1" aria-label="Identity Profile">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center group-hover:border-orange-500 transition-all">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[7px] font-black tracking-tighter text-gray-600 group-hover:text-orange-500 transition-colors">
+                      ID
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </div>
+          </header>
 
           <section className="relative">
             <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-6">Recent Collection</h2>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import SidebarMenu from '@/components/SidebarMenu'; // ← これを追加！
 
 export default function ReviewDetailPage() {
   const { id } = useParams();
@@ -72,7 +73,6 @@ export default function ReviewDetailPage() {
         }
       }
 
-      // 公式解説（エディトリアル）とロック指定を取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -94,9 +94,7 @@ export default function ReviewDetailPage() {
     const rankMap: { [key: string]: number } = { "S": 5, "A": 4, "B": 3, "C": 2, "D": 1 };
     let pts = 0, count = 0;
 
-    // ratingsの値を直接ループするのではなく、トラックのインデックスをベースに回す
     review.tracks.forEach((_: any, i: number) => {
-      // ◆ 重要: Supabase側でこのトラック番号がロック対象に入っていたら、計算から完全に除外する
       if (editorial?.locked_tracks?.includes(i)) return;
 
       const r = ratings[i];
@@ -155,17 +153,14 @@ export default function ReviewDetailPage() {
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
-        {/* 既存のheader部分をこれに差し替え */}
-<header className="flex justify-between items-center mb-8 md:mb-10">
-  {/* 左側にメニューとBackボタンを綺麗に並べる */}
-  <div className="flex items-center gap-4 md:gap-5">
-    <SidebarMenu />
-    <button onClick={() => router.back()} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back</button>
-  </div>
-  
-  {/* 右側のロゴレイアウトは一切触らない */}
-  <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
-</header>
+        <header className="flex justify-between items-center mb-8 md:mb-10">
+          <div className="flex items-center gap-4 md:gap-5">
+            <SidebarMenu />
+            <button onClick={() => router.back()} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back</button>
+          </div>
+          
+          <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
+        </header>
 
         <div className="bg-[#1e1e1e] p-6 md:p-8 rounded-[2rem] md:rounded-3xl mb-12 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-800 shadow-xl gap-6 md:gap-8">
           <div className="flex gap-4 md:gap-6 items-start md:items-center min-w-0 w-full md:w-auto">
@@ -200,10 +195,7 @@ export default function ReviewDetailPage() {
 
         <div className="space-y-4 pb-20">
           {review.tracks.map((track: string, i: number) => {
-            // --- 変更: データベースの値を見てロック判定を行う ---
-            // editorial.locked_tracks の中に現在のインデックス(i)が含まれていればロック
             const isLocked = editorial?.locked_tracks?.includes(i) || false;
-            // ------------------------------------------------
 
             return (
               <div key={i} className={`flex flex-col rounded-2xl border overflow-hidden transition-all ${isLocked ? 'bg-[#121212] border-gray-900/50 opacity-60' : 'bg-[#1e1e1e]/50 border-gray-800'}`}>
