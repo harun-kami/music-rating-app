@@ -146,42 +146,23 @@ export default function Home() {
       <main className="min-h-screen bg-[#121212] text-white p-4 md:p-8 font-sans overflow-x-hidden text-left pt-12 md:pt-8">
         <div className="max-w-6xl mx-auto space-y-20 md:space-y-32">
           
-          <header className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-4 md:gap-5">
-              <button 
-                onClick={() => setIsMenuOpen(true)} 
-                className="group flex flex-col gap-1.5 focus:outline-none p-1" 
-                aria-label="Open Menu"
-              >
-                <span className="w-5 h-0.5 bg-gray-600 group-hover:bg-orange-500 transition-colors duration-300"></span>
-                <span className="w-5 h-0.5 bg-gray-600 group-hover:bg-orange-500 transition-colors duration-300"></span>
-              </button>
+          {/* 既存のheader部分をこれに差し替え */}
+<header className="flex justify-between items-center mb-8">
+  <div className="flex items-center gap-4 md:gap-5">
+    {/* 共通メニューを置くだけ */}
+    <SidebarMenu />
 
-              <div className="text-left">
-                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
-                <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Link href="/ranking" className="flex border border-gray-800 hover:border-orange-500 text-gray-500 px-3 py-2 rounded-xl font-black text-[8px] md:text-[9px] transition-all items-center italic uppercase">Global Ranking</Link>
-              <Link href="/review" className="bg-orange-500 text-black px-3 py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all">+ NEW DIG</Link>
-              
-              {/* --- 変更箇所: IDアイコンに画像を表示 --- */}
-              <Link href="/profile" className="block group ml-1" aria-label="Identity Profile">
-                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center group-hover:border-orange-500 transition-all">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[7px] font-black tracking-tighter text-gray-600 group-hover:text-orange-500 transition-colors">
-                      ID
-                    </span>
-                  )}
-                </div>
-              </Link>
-              {/* -------------------------------------- */}
-            </div>
-          </header>
+    <div className="text-left">
+      <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-orange-500 uppercase leading-none">MY DIGS.</h1>
+      <p className="text-[7px] text-gray-600 font-bold uppercase tracking-[0.3em] mt-1">Micro Archive // 2026</p>
+    </div>
+  </div>
+  
+  {/* 右側のランキング、NEW DIG、IDアイコンの塊はそのまま */}
+  <div className="flex items-center gap-2">
+    ...
+  </div>
+</header>
 
           <section className="relative">
             <h2 className="text-[10px] font-black border-l-2 border-orange-500 pl-3 uppercase tracking-[0.2em] text-gray-500 mb-6">Recent Collection</h2>

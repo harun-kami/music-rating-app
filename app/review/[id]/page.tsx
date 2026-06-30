@@ -155,10 +155,17 @@ export default function ReviewDetailPage() {
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
-        <header className="flex justify-between items-center mb-8 md:mb-10">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back</button>
-          <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
-        </header>
+        {/* 既存のheader部分をこれに差し替え */}
+<header className="flex justify-between items-center mb-8 md:mb-10">
+  {/* 左側にメニューとBackボタンを綺麗に並べる */}
+  <div className="flex items-center gap-4 md:gap-5">
+    <SidebarMenu />
+    <button onClick={() => router.back()} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back</button>
+  </div>
+  
+  {/* 右側のロゴレイアウトは一切触らない */}
+  <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
+</header>
 
         <div className="bg-[#1e1e1e] p-6 md:p-8 rounded-[2rem] md:rounded-3xl mb-12 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-800 shadow-xl gap-6 md:gap-8">
           <div className="flex gap-4 md:gap-6 items-start md:items-center min-w-0 w-full md:w-auto">
