@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import SidebarMenu from '@/components/SidebarMenu';
 
 export default function ProfilePage() {
   const router = useRouter();
