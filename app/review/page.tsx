@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import SidebarMenu from '@/components/SidebarMenu'; // ← メニューを追加
 
 function ReviewContent() {
   const searchParams = useSearchParams();
@@ -26,23 +27,30 @@ function ReviewContent() {
       if (!autoAlbumId || selectedAlbum) return;
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/album-details?id=${autoAlbumId}`);
+        // --- 修正箇所: apiフォルダを経由せず、直接iTunes APIを叩く ---
+        const res = await fetch(`https://itunes.apple.com/lookup?id=${autoAlbumId}&entity=song&lang=en_us`);
         const data = await res.json();
-        if (res.ok) {
+        
+        if (data.results && data.results.length > 0) {
+          const albumInfo = data.results[0];
+          const trackList = data.results.slice(1).map((track: any) => track.trackName);
+          
           setSelectedAlbum({
-            id: data.id, 
-            title: data.name, 
-            artist: data.artistName,
-            image: data.image, 
-            tracks: data.tracks, 
-            artistId: data.artistId,
-            genre: data.genre,
-            release_year: data.release_year 
+            id: String(albumInfo.collectionId),
+            title: albumInfo.collectionName,
+            artist: albumInfo.artistName,
+            image: albumInfo.artworkUrl100.replace('100x100bb', '600x600bb'),
+            tracks: trackList,
+            artistId: String(albumInfo.artistId),
+            genre: albumInfo.primaryGenreName,
+            release_year: albumInfo.releaseDate ? albumInfo.releaseDate.substring(0, 4) : "Unknown"
           });
+          
           const init: any = {};
-          data.tracks.forEach((_: any, i: number) => { init[i] = "-"; });
+          trackList.forEach((_: any, i: number) => { init[i] = "-"; });
           setRatings(init);
         }
+        // -----------------------------------------------------------
       } catch (e) { console.error(e); }
       setIsLoading(false);
     };
@@ -54,7 +62,8 @@ function ReviewContent() {
     if (!query) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=20&lang=ja_jp`);
+      // 検索も英語表記に統一 (lang=en_us)
+      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=20&lang=en_us`);
       const data = await res.json();
       setResults(data.results || []);
     } catch (e) { console.error(e); }
@@ -69,11 +78,9 @@ function ReviewContent() {
     return count === 0 ? "0.0" : ((pts / (count * 5)) * 10).toFixed(1);
   };
 
-  // --- 修正箇所: user_idを保存 ---
   const handleSave = async () => {
     setSaveStatus("SAVING...");
     
-    // ログインユーザー取得
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSaveStatus("ERROR: LOGIN REQUIRED");
@@ -90,16 +97,17 @@ function ReviewContent() {
       ratings: ratings,
       favorite_track: favoriteTrack,
       score: parseFloat(calculateScoreDisplay()),
-      genre: selectedAlbum.genre?.toUpperCase() === "Hip-Hop/Rap" ? "Hip Hop" : (selectedAlbum.genre || "Unknown"),
+      genre: selectedAlbum.genre?.toUpperCase() === "HIP-HOP/RAP" ? "Hip Hop" : (selectedAlbum.genre || "Unknown"),
       release_year: selectedAlbum.release_year,
-      user_id: user.id // ← user_idを追加
+      user_id: user.id 
     };
 
     const { error } = await supabase
-  .from('reviews')
-  .upsert(cleanData, { 
-    onConflict: 'id,user_id' // ← ここを id だけじゃなく id,user_id にする
-  });
+      .from('reviews')
+      .upsert(cleanData, { 
+        onConflict: 'id,user_id' 
+      });
+      
     if (error) { setSaveStatus("ERROR! ❌"); } 
     else { setSaveStatus("SAVED! 🔥"); setTimeout(() => router.push('/'), 1500); }
   };
@@ -113,14 +121,20 @@ function ReviewContent() {
       <div className="max-w-3xl mx-auto">
         {!selectedAlbum ? (
           <div className="pt-10">
+            {/* 検索画面のヘッダー */}
             <header className="flex justify-between items-center mb-16">
-              <Link href="/" className="text-gray-500 hover:text-orange-500 text-xs font-bold uppercase transition-colors">← Library</Link>
-              <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
+              <div className="flex items-center gap-4 md:gap-5">
+                <SidebarMenu />
+                <Link href="/" className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Library</Link>
+              </div>
+              <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
             </header>
+            
             <form onSubmit={handleSearch} className="relative mb-12">
               <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search Album..." className="w-full bg-[#1e1e1e] border-2 border-gray-800 rounded-3xl py-6 px-8 text-xl font-black italic focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-700" />
               <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-orange-500 text-black px-8 py-3 rounded-2xl font-black italic">SEARCH</button>
             </form>
+            
             {results.length > 0 && (
               <div className="flex overflow-x-auto gap-6 pb-12 scrollbar-hide snap-x">
                 {results.map((album) => (
@@ -137,8 +151,12 @@ function ReviewContent() {
           </div>
         ) : (
           <>
+            {/* アルバム選択後のヘッダー */}
             <header className="flex justify-between items-center mb-8 md:mb-10">
-              <button onClick={() => { setSelectedAlbum(null); router.push('/review'); }} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back to Search</button>
+              <div className="flex items-center gap-4 md:gap-5">
+                <SidebarMenu />
+                <button onClick={() => { setSelectedAlbum(null); router.push('/review'); }} className="text-gray-500 hover:text-orange-500 text-[10px] md:text-xs font-bold uppercase transition-colors">← Back to Search</button>
+              </div>
               <h1 className="text-lg md:text-xl font-black italic text-orange-500 uppercase leading-none">MY DIGS.</h1>
             </header>
 
