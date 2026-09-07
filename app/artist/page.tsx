@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-// ※ SidebarMenu は必要に応じてインポートしてね
 
-export default function ArtistPage() {
-  const { id } = useParams();
+function ArtistContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const router = useRouter();
   const [artist, setArtist] = useState<any>(null);
   const [albums, setAlbums] = useState<any[]>([]);
@@ -42,7 +42,6 @@ export default function ArtistPage() {
       }
 
       try {
-        // --- 修正箇所: apiフォルダを経由せず、直接iTunes APIを叩く ---
         const res = await fetch(`https://itunes.apple.com/lookup?id=${id}&entity=album&limit=200&lang=en_us`);
         
         if (!res.ok) throw new Error('iTunes Network Error');
@@ -58,7 +57,6 @@ export default function ArtistPage() {
           const albumList = data.results.slice(1)
             .filter((item: any) => {
               const lowerName = item.collectionName?.toLowerCase() || "";
-              
               const isExplicitlyClean = item.collectionExplicitness === 'cleaned';
               const isCleanTitle = lowerName.includes('clean');
               const isDuplicate = seenCollectionIds.has(item.collectionId);
@@ -85,7 +83,6 @@ export default function ArtistPage() {
           });
           setAlbums(albumList);
         }
-        // -----------------------------------------------------------
 
         const { data: revData } = await supabase
           .from('reviews')
@@ -139,7 +136,7 @@ export default function ArtistPage() {
             </h2>
             <div className="grid gap-4">
               {myRankings.map((rev, i) => (
-                <Link key={rev.id} href={`/review/${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-3 md:p-4 rounded-[1.5rem] md:rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
+                <Link key={rev.id} href={`/review/detail?id=${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-3 md:p-4 rounded-[1.5rem] md:rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
                   <div className="flex-none w-10 md:w-14 text-2xl md:text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-1 md:-ml-4 mr-2 flex items-center justify-center">
                     #{i + 1}
                   </div>
@@ -194,5 +191,13 @@ export default function ArtistPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function ArtistPage() {
+  return (
+    <Suspense fallback={<div className="bg-[#121212] min-h-screen" />}>
+      <ArtistContent />
+    </Suspense>
   );
 }

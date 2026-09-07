@@ -176,11 +176,11 @@ export default function Home() {
             <div ref={carouselRef} className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
               {recentDigs.map((rev) => (
                 <div key={rev.id} className="flex-none w-[130px] md:w-[140px] group text-left">
-                  <Link href={`/review/${rev.id}`} className="block aspect-square rounded-lg overflow-hidden mb-3 bg-gray-900 border border-white/5 transition-all group-hover:border-orange-500/50">
+                  <Link href={`/review/detail?id=${rev.id}`} className="block aspect-square rounded-lg overflow-hidden mb-3 bg-gray-900 border border-white/5 transition-all group-hover:border-orange-500/50">
                     <img src={rev.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                   </Link>
                   <h3 className="font-bold text-[9px] uppercase italic truncate mb-0.5">{rev.title}</h3>
-                  <Link href={`/artist/${rev.artist_id}`} className="text-[8px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{rev.artist}</Link>
+                  <Link href={`/artist?id=${rev.artist_id}`} className="text-[8px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{rev.artist}</Link>
                   <span className="text-lg font-black text-orange-500 italic">{rev.score.toFixed(1)}</span>
                 </div>
               ))}
@@ -285,7 +285,7 @@ function RankingSection({ title, data, hideTitleOnMobile = false }: { title: str
           
           return (
             <div key={review.id} className="group relative">
-              <Link href={`/review/${review.id}`}>
+              <Link href={`/review/detail?id=${review.id}`}>
                 <div className="relative aspect-square mb-3 rounded-[1.2rem] overflow-hidden bg-gray-900 border border-gray-800 shadow-xl group-hover:border-orange-500 transition-all">
                   <img src={review.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
                   <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 flex items-center justify-center rounded-full font-black italic text-[8px] border border-white/10">#{displayRank}</div>
@@ -295,7 +295,7 @@ function RankingSection({ title, data, hideTitleOnMobile = false }: { title: str
                 </div>
                 <h3 className="px-1 font-black text-[9px] md:text-[10px] uppercase italic truncate mb-0.5 group-hover:text-orange-500 transition-colors">{review.title}</h3>
               </Link>
-              <Link href={`/artist/${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{review.artist}</Link>
+              <Link href={`/artist?id=${review.artist_id || review.artistId}`} className="px-1 text-[7px] text-gray-600 font-bold uppercase truncate block hover:text-orange-500 transition-colors">{review.artist}</Link>
             </div>
           );
         })}

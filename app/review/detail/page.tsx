@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import SidebarMenu from '@/components/SidebarMenu'; // ← これを追加！
+import SidebarMenu from '@/components/SidebarMenu';
 
-export default function ReviewDetailPage() {
-  const { id } = useParams();
+function ReviewDetailContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const router = useRouter();
   const ranks = ["S", "A", "B", "C", "D", "-"];
   const [review, setReview] = useState<any>(null);
@@ -25,6 +26,7 @@ export default function ReviewDetailPage() {
 
   useEffect(() => {
     const fetchReview = async () => {
+      if (!id) return;
       setIsLoading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,7 +88,7 @@ export default function ReviewDetailPage() {
       setIsLoading(false);
     };
 
-    if (id) fetchReview();
+    fetchReview();
   }, [id, router]);
 
   const calculateScoreDisplay = () => {
@@ -168,7 +170,7 @@ export default function ReviewDetailPage() {
             <div className="min-w-0 w-full">
               <h2 className="text-xl md:text-4xl font-black text-orange-500 uppercase italic leading-tight truncate tracking-tighter mb-1 md:mb-2">{review.title}</h2>
               <div className="flex items-center gap-3 md:gap-4 mb-2">
-                <Link href={`/artist/${review.artist_id || review.artistId}`} className="text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase truncate transition-colors block">{review.artist}</Link>
+                <Link href={`/artist?id=${review.artist_id || review.artistId}`} className="text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase truncate transition-colors block">{review.artist}</Link>
                 <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none shadow-lg">SCORE: {calculateScoreDisplay()}</div>
               </div>
               
@@ -295,5 +297,13 @@ export default function ReviewDetailPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ReviewDetailPage() {
+  return (
+    <Suspense fallback={<div className="bg-[#121212] min-h-screen" />}>
+      <ReviewDetailContent />
+    </Suspense>
   );
 }

@@ -111,7 +111,7 @@ export default function RankingPage() {
                 const displayRank = filteredReviews.findIndex(r => r.score === rev.score) + 1;
 
                 return (
-                  <Link href={`/review/${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
+                  <Link href={`/review/detail?id=${rev.id}`} key={rev.id} className="group flex items-center bg-[#1a1a1a] rounded-2xl p-3 border border-gray-800 gap-3 md:gap-6 shadow-xl transition-all hover:border-orange-500">
                     {/* index + 1 ではなく displayRank を表示 */}
                     <div className="text-xl md:text-4xl font-black italic text-gray-800 min-w-[2.5rem] md:min-w-[4rem] flex-none text-center leading-none">#{displayRank}</div>
                     <img src={rev.image} className="w-12 h-12 md:w-20 md:h-20 rounded-lg object-cover flex-none border border-white/5" alt="" />

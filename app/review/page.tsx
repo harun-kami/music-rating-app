@@ -143,7 +143,7 @@ function ReviewContent() {
                       <img src={album.artworkUrl100.replace('100x100bb', '600x600bb')} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                     </div>
                     <h3 className="font-black italic uppercase text-[10px] truncate mb-1">{album.collectionName}</h3>
-                    <p onClick={(e) => { e.stopPropagation(); router.push(`/artist/${album.artistId}`); }} className="text-gray-600 hover:text-orange-500 text-[8px] font-bold uppercase tracking-[0.2em] transition-colors inline-block">{album.artistName}</p>
+                    <p onClick={(e) => { e.stopPropagation(); router.push(`/artist?id=${album.artistId}`); }} className="text-gray-600 hover:text-orange-500 text-[8px] font-bold uppercase tracking-[0.2em] transition-colors inline-block">{album.artistName}</p>
                   </div>
                 ))}
               </div>
@@ -166,7 +166,7 @@ function ReviewContent() {
                 <div className="min-w-0 text-left">
                   <h2 className="text-xl md:text-4xl font-black text-orange-500 uppercase italic leading-tight truncate tracking-tighter mb-1 md:mb-2">{selectedAlbum.title}</h2>
                   <div className="flex items-center gap-3 md:gap-4">
-                    <Link href={`/artist/${selectedAlbum.artistId}`} className="text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase truncate transition-colors block">{selectedAlbum.artist}</Link>
+                    <Link href={`/artist?id=${selectedAlbum.artistId}`} className="text-[10px] md:text-xs text-gray-500 hover:text-orange-500 font-bold uppercase truncate transition-colors block">{selectedAlbum.artist}</Link>
                     <div className="bg-orange-500 text-black px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black italic flex-none shadow-lg">SCORE: {calculateScoreDisplay()}</div>
                   </div>
                 </div>
