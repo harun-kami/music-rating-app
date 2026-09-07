@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+// ※ SidebarMenu は必要に応じてインポートしてね
 
 export default function ArtistPage() {
   const { id } = useParams();
@@ -41,24 +42,60 @@ export default function ArtistPage() {
       }
 
       try {
-        const res = await fetch(`/api/artist-details?id=${id}`);
-        const data = await res.json();
+        // --- 修正箇所: apiフォルダを経由せず、直接iTunes APIを叩く ---
+        const res = await fetch(`https://itunes.apple.com/lookup?id=${id}&entity=album&limit=200&lang=en_us`);
         
-        if (!res.ok) {
-          setErrorMsg(data.error || "Failed to load artist");
+        if (!res.ok) throw new Error('iTunes Network Error');
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          setArtist({ name: "Unknown Artist", images: [] });
+          setAlbums([]);
         } else {
-          setArtist(data.artist);
-          setAlbums(data.albums);
+          const artistInfo = data.results[0];
+          const seenCollectionIds = new Set();
+          
+          const albumList = data.results.slice(1)
+            .filter((item: any) => {
+              const lowerName = item.collectionName?.toLowerCase() || "";
+              
+              const isExplicitlyClean = item.collectionExplicitness === 'cleaned';
+              const isCleanTitle = lowerName.includes('clean');
+              const isDuplicate = seenCollectionIds.has(item.collectionId);
 
-          const { data: revData } = await supabase
-            .from('reviews')
-            .select('*')
-            .eq('artist_id', id)
-            .eq('user_id', user.id);
+              if (!isExplicitlyClean && !isCleanTitle && !isDuplicate) {
+                seenCollectionIds.add(item.collectionId);
+                return true;
+              }
+              return false;
+            })
+            .map((item: any) => ({
+              id: String(item.collectionId),
+              name: item.collectionName,
+              images: [{ url: item.artworkUrl100?.replace('100x100bb', '600x600bb') || "" }],
+              release_date: item.releaseDate,
+            }))
+            .sort((a: any, b: any) => 
+              new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
+            );
 
-          const sorted = (revData || []).sort((a: any, b: any) => b.score - a.score);
-          setMyRankings(sorted);
+          setArtist({
+            name: artistInfo.artistName,
+            images: [{ url: albumList[0]?.images[0]?.url || "" }] 
+          });
+          setAlbums(albumList);
         }
+        // -----------------------------------------------------------
+
+        const { data: revData } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('artist_id', id)
+          .eq('user_id', user.id);
+
+        const sorted = (revData || []).sort((a: any, b: any) => b.score - a.score);
+        setMyRankings(sorted);
+        
       } catch (e) {
         setErrorMsg("Network Error. Please try again.");
       }
@@ -84,7 +121,6 @@ export default function ArtistPage() {
           <h1 className="text-xl font-black italic text-orange-500 uppercase leading-none select-none">MY DIGS.</h1>
         </header>
 
-        {/* アーティストヘッダー: タイトルサイズをスマホで最適化 */}
         <div className="relative h-56 md:h-80 w-full mb-12 md:mb-16 overflow-hidden rounded-[1.5rem] md:rounded-[2rem] border border-gray-800 shadow-2xl bg-gray-900">
           {artist?.images?.[0]?.url && (
             <img src={artist.images[0].url} className="w-full h-full object-cover opacity-20 blur-xl scale-110" alt="" />
@@ -96,7 +132,6 @@ export default function ArtistPage() {
           </div>
         </div>
 
-        {/* --- MY RANKINGS --- */}
         {myRankings.length > 0 && (
           <section className="mb-16 md:mb-20 px-1 md:px-0">
             <h2 className="text-xl md:text-2xl font-black italic text-white uppercase tracking-tighter mb-8 flex items-center gap-4">
@@ -123,7 +158,6 @@ export default function ArtistPage() {
           </section>
         )}
 
-        {/* ディスコグラフィー */}
         <section className="px-1 md:px-0">
           <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-8 pb-4 border-b border-gray-900">Discography</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8">
