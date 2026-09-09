@@ -57,11 +57,16 @@ function ArtistContent() {
           const albumList = data.results.slice(1)
             .filter((item: any) => {
               const lowerName = item.collectionName?.toLowerCase() || "";
+              
               const isExplicitlyClean = item.collectionExplicitness === 'cleaned';
               const isCleanTitle = lowerName.includes('clean');
               const isDuplicate = seenCollectionIds.has(item.collectionId);
 
-              if (!isExplicitlyClean && !isCleanTitle && !isDuplicate) {
+              // === 🔥 ここを追加: "- Single" を除外する条件 ===
+              const isSingle = lowerName.endsWith('- single') || lowerName.endsWith(' - single');
+
+              // if文の中に !isSingle を追加
+              if (!isExplicitlyClean && !isCleanTitle && !isDuplicate && !isSingle) {
                 seenCollectionIds.add(item.collectionId);
                 return true;
               }
