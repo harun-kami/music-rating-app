@@ -2,10 +2,14 @@ workflows:
   ios-release:
     name: iOS Release Build
     max_build_duration: 120
+    # ▼▼▼ これを追加！ ▼▼▼
+    integrations:
+      app_store_connect: "Codemagic" # ★先ほどCodemagicの連携画面で入力した「名前」と一言一句同じものを入れる
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.yourname.mydigs # ★ここを君のBundle ID（例: com.harunkami.mydigs）に変更する
+        bundle_identifier: com.mydigs.app # ★必ずApple Developerで登録した君の実際のBundle IDに書き換える！
     scripts:
       - name: Install dependencies
         script: npm install
