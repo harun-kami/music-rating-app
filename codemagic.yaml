@@ -4,10 +4,6 @@ workflows:
     max_build_duration: 120
     integrations:
       app_store_connect: "Codemagic"
-    environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mydigs.app
     scripts:
       - name: Install dependencies
         script: npm install
@@ -17,6 +13,13 @@ workflows:
         script: |
           npx cap sync ios
           sed -i '' 's/com.capacitorjs.app/com.mydigs.app/g' ios/App/App.xcodeproj/project.pbxproj
+      - name: Setup Code Signing
+        script: |
+          keychain initialize
+          # ▼ここで「プロフィールが無ければ強制的に作成する（--create）」と命令している
+          app-store-connect fetch-signing-files "com.mydigs.app" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
