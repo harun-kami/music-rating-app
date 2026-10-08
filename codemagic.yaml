@@ -20,7 +20,8 @@ workflows:
           keychain initialize
           app-store-connect fetch-signing-files "com.mydigs.app" --type IOS_APP_STORE --create
           keychain add-certificates
-          xcode-project use-profiles
+          # ▼▼▼ ここに「--project」の場所指定を追加した！ ▼▼▼
+          xcode-project use-profiles --project "ios/App/App.xcodeproj"
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
