@@ -5,9 +5,14 @@ workflows:
     integrations:
       app_store_connect: "Codemagic"
     environment:
+      # ▼▼▼ 誤って消してしまったこのブロックを復活！ ▼▼▼
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mydigs.app
+      # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
       vars:
-        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLのままにする
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーのままにする
+        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君の実際のURL
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君の実際のキー
     scripts:
       - name: Install dependencies
         script: npm install
@@ -25,7 +30,6 @@ workflows:
           xcode-project use-profiles
       - name: Build iOS app
         script: |
-          # ▼▼▼ ここを --workspace から --project に変更し、.xcodeproj にした！ ▼▼▼
           xcode-project build-ipa \
             --project "ios/App/App.xcodeproj" \
             --scheme "App" \
