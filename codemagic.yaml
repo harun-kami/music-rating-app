@@ -4,6 +4,12 @@ workflows:
     max_build_duration: 120
     integrations:
       app_store_connect: "Codemagic"
+    # ▼▼▼ ここを追加！ ▼▼▼
+    environment:
+      vars:
+        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★ここを君の実際のURLに書き換える
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★ここを君の実際のキーに書き換える
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     scripts:
       - name: Install dependencies
         script: npm install
@@ -16,7 +22,6 @@ workflows:
       - name: Setup Code Signing
         script: |
           keychain initialize
-          # ▼ここで「プロフィールが無ければ強制的に作成する（--create）」と命令している
           app-store-connect fetch-signing-files "com.mydigs.app" --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
