@@ -32,7 +32,7 @@ workflows:
           xcode-project build-ipa \
             --project "ios/App/App.xcodeproj" \
             --scheme "App" \
-            --archive-flags="-destination 'generic/platform=iOS'"
+            --archive-flags="-destination 'generic/platform=iOS' PROVISIONING_PROFILE_SPECIFIER=''"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
