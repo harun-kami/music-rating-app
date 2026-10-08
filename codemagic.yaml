@@ -4,12 +4,10 @@ workflows:
     max_build_duration: 120
     integrations:
       app_store_connect: "Codemagic"
-    # ▼▼▼ ここを追加！ ▼▼▼
     environment:
       vars:
-        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★ここを君の実際のURLに書き換える
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★ここを君の実際のキーに書き換える
-    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLのままにする
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーのままにする
     scripts:
       - name: Install dependencies
         script: npm install
@@ -27,8 +25,9 @@ workflows:
           xcode-project use-profiles
       - name: Build iOS app
         script: |
+          # ▼▼▼ ここを --workspace から --project に変更し、.xcodeproj にした！ ▼▼▼
           xcode-project build-ipa \
-            --workspace "ios/App/App.xcworkspace" \
+            --project "ios/App/App.xcodeproj" \
             --scheme "App" \
             --archive-flags="-destination 'generic/platform=iOS'"
     artifacts:
