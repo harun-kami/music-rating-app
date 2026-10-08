@@ -4,11 +4,9 @@ workflows:
     max_build_duration: 120
     integrations:
       app_store_connect: "Codemagic"
-    # ▼手動スクリプトを消し、Codemagicの「自動署名」を復活させた！▼
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mydigs.app
+      groups:
+        - ios_manual # さっきCodemagicで作ったグループ！
       vars:
         NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLを入れる
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーを入れる
@@ -19,6 +17,16 @@ workflows:
         script: npm run build
       - name: Sync Capacitor
         script: npx cap sync ios
+      - name: Setup Manual Code Signing
+        script: |
+          # 登録した変数をファイルとして復元する
+          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/cert.p12
+          echo "$CM_PROFILE" | base64 --decode > /tmp/profile.mobileprovision
+          
+          # 鍵穴を初期化して、君の鍵をガチャンとはめる！
+          keychain initialize
+          keychain add-certificates --certificate /tmp/cert.p12 --certificate-password "$CM_CERT_PASSWORD"
+          xcode-project use-profiles --profile /tmp/profile.mobileprovision --project "ios/App/App.xcodeproj"
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
