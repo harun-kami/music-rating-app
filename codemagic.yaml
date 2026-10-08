@@ -6,21 +6,23 @@ workflows:
       app_store_connect: "Codemagic"
     environment:
       vars:
-        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLを入れる
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーを入れる
+        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLを忘れずに！
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーを忘れずに！
     scripts:
       - name: Install dependencies
         script: npm install
       - name: Build Next.js app
         script: npm run build
       - name: Sync Capacitor
-        script: npx cap sync ios
+        script: |
+          npx cap sync ios
+          # ▼▼▼ どんな古いIDでも「com.mydigs.app」に強制上書きする最強のコマンド ▼▼▼
+          sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = com.mydigs.app;/g' ios/App/App.xcodeproj/project.pbxproj
       - name: Setup Code Signing
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "com.mydigs.app" --type IOS_APP_STORE --create
           keychain add-certificates
-          # ▼▼▼ ここに「--project」の場所指定を追加した！ ▼▼▼
           xcode-project use-profiles --project "ios/App/App.xcodeproj"
       - name: Build iOS app
         script: |
