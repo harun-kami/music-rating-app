@@ -30,7 +30,7 @@ workflows:
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
-            --project "ios/App/App.xcodeproj" \
+            --project "ios/App/App.xcworkspace" \
             --scheme "App" \
             --archive-flags="-destination 'generic/platform=iOS'"
     artifacts:
