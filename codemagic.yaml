@@ -5,23 +5,16 @@ workflows:
     integrations:
       app_store_connect: "Codemagic"
     environment:
-      # ▼▼▼ 誤って消してしまったこのブロックを復活！ ▼▼▼
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mydigs.app
-      # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
       vars:
-        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君の実際のURL
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君の実際のキー
+        NEXT_PUBLIC_SUPABASE_URL: "https://mqjefmzhccklkczsrhba.supabase.co/rest/v1/" # ★君のURLを入れる
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_2qYxaHe0pgCa6shiA3eoZw_bkI1qnGx"         # ★君のキーを入れる
     scripts:
       - name: Install dependencies
         script: npm install
       - name: Build Next.js app
         script: npm run build
       - name: Sync Capacitor
-        script: |
-          npx cap sync ios
-          sed -i '' 's/com.capacitorjs.app/com.mydigs.app/g' ios/App/App.xcodeproj/project.pbxproj
+        script: npx cap sync ios
       - name: Setup Code Signing
         script: |
           keychain initialize
