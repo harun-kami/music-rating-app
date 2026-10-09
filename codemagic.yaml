@@ -29,11 +29,16 @@ workflows:
           xcode-project use-profiles --profile /tmp/profile.mobileprovision --project "ios/App/App.xcodeproj"
       - name: Build iOS app
         script: |
-          # 1. 君が手渡ししたプロファイルの中から、隠された絶対的な「UUID」を抽出する
+          # 1. UUIDを抽出
           UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
           echo "抽出したプロファイルのUUID: $UUID"
           
-          # 2. Xcodeに「絶対にこのUUIDのプロファイルを使え！」と強制する
+          # 2. プロファイルをMacの正しい保管庫（Provisioning Profilesフォルダ）にコピーする！
+          PROFILE_DIR=$HOME/Library/MobileDevice/Provisioning\ Profiles
+          mkdir -p "$PROFILE_DIR"
+          cp /tmp/profile.mobileprovision "$PROFILE_DIR/$UUID.mobileprovision"
+          
+          # 3. ビルド実行
           xcode-project build-ipa \
             --project "ios/App/App.xcodeproj" \
             --scheme "App" \
