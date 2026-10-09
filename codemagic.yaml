@@ -45,7 +45,7 @@ workflows:
           xcode-project build-ipa \
             --project "ios/App/App.xcodeproj" \
             --scheme "App" \
-            --archive-flags="-destination 'generic/platform=iOS' PROVISIONING_PROFILE_SPECIFIER=$UUID PROVISIONING_PROFILE=$UUID" \
+            --archive-flags="-destination 'generic/platform=iOS' PROVISIONING_PROFILE_SPECIFIER=$UUID PROVISIONING_PROFILE=$UUID CURRENT_PROJECT_VERSION=2" \
             --disable-xcpretty
     artifacts:
       - build/ios/ipa/*.ipa
