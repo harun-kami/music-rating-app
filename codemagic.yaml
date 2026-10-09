@@ -29,10 +29,16 @@ workflows:
           xcode-project use-profiles --profile /tmp/profile.mobileprovision --project "ios/App/App.xcodeproj"
       - name: Build iOS app
         script: |
+          # 1. 君が手渡ししたプロファイルの中から、隠された絶対的な「UUID」を抽出する
+          UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
+          echo "抽出したプロファイルのUUID: $UUID"
+          
+          # 2. Xcodeに「絶対にこのUUIDのプロファイルを使え！」と強制する
           xcode-project build-ipa \
             --project "ios/App/App.xcodeproj" \
             --scheme "App" \
-            --archive-flags="-destination 'generic/platform=iOS' PROVISIONING_PROFILE_SPECIFIER=''"
+            --archive-flags="-destination 'generic/platform=iOS' PROVISIONING_PROFILE_SPECIFIER=$UUID PROVISIONING_PROFILE=$UUID" \
+            --disable-xcpretty
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
