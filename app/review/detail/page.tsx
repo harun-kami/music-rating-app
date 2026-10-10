@@ -153,7 +153,7 @@ function ReviewDetailContent() {
   if (errorMsg || !review) return <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6 text-orange-500 font-black italic uppercase"><p className="mb-4">Digging Failed: {errorMsg || "Review not found"}</p><Link href="/" className="bg-orange-500 text-black px-8 py-3 rounded-2xl font-black text-[10px]">Back</Link></div>;
 
   return (
-    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 font-sans overflow-x-hidden text-left">
+    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-[calc(env(safe-area-inset-top)+1rem)] font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
         <header className="flex justify-between items-center mb-8 md:mb-10">
           <div className="flex items-center gap-4 md:gap-5">
