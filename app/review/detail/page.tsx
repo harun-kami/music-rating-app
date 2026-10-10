@@ -317,8 +317,21 @@ function ReviewDetailContent() {
                 <div className={`px-6 sm:px-14 transition-all duration-300 ease-in-out bg-black/20 ${expandedTrack === i ? 'max-h-[800px] pb-5 pt-2 opacity-100 border-t border-gray-800/50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                   <div className="space-y-4 pt-3">
                     <div className="space-y-2">
-                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Producers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
-                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]"><span className="text-orange-500/40 font-black italic">Writers</span><span className="text-gray-500 font-bold">Data syncing...</span></div>
+                      {/* プロデューサー情報の表示 */}
+                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]">
+                        <span className="text-orange-500/40 font-black italic">Producers</span>
+                        <span className="text-gray-400 font-bold">
+                          {editorial?.producers?.[i] || "Data syncing from archive..."}
+                        </span>
+                      </div>
+                      
+                      {/* ライター情報の表示 */}
+                      <div className="flex gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em]">
+                        <span className="text-orange-500/40 font-black italic">Writers</span>
+                        <span className="text-gray-400 font-bold">
+                          {editorial?.writers?.[i] || "Data syncing from archive..."}
+                        </span>
+                      </div>
                     </div>
                     
                     {editorial?.track_notes?.[i] && (
