@@ -6,6 +6,15 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import SidebarMenu from '@/components/SidebarMenu';
 
+// ★追加：リアクションの種類を定義
+const REACTION_TYPES = [
+  { id: 'fire', emoji: '🔥' },
+  { id: 'cold', emoji: '🥶' },
+  { id: 'wavy', emoji: '🌊' },
+  { id: 'goat', emoji: '🐐' },
+  { id: 'skip', emoji: '💤' },
+];
+
 function ReviewDetailContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -23,6 +32,10 @@ function ReviewDetailContent() {
   const [expandedAlbumNote, setExpandedAlbumNote] = useState(false);
 
   const [globalRatings, setGlobalRatings] = useState<{ [key: number]: { S: number, A: number, B: number, C: number, D: number } }>({});
+  
+  // ★追加：リアクションの状態とユーザーIDを管理
+  const [reactions, setReactions] = useState<any>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReview = async () => {
@@ -34,6 +47,7 @@ function ReviewDetailContent() {
         router.push('/login');
         return;
       }
+      setCurrentUserId(user.id);
 
       const { data, error } = await supabase
         .from('reviews')
@@ -50,6 +64,7 @@ function ReviewDetailContent() {
         setRatings(data.ratings || {});
         setFavoriteTrack(data.favorite_track);
 
+        // Global Ratingsの取得
         const { data: allReviews } = await supabase
           .from('reviews')
           .select('ratings')
@@ -75,6 +90,7 @@ function ReviewDetailContent() {
         }
       }
 
+      // Editorialの取得
       const { data: edData } = await supabase
         .from('album_editorials')
         .select('*')
@@ -83,6 +99,30 @@ function ReviewDetailContent() {
       
       if (edData) {
         setEditorial(edData);
+      }
+
+      // ★追加：トラックごとのリアクションを取得して集計する
+      const { data: reactionData } = await supabase
+        .from('track_reactions')
+        .select('*')
+        .eq('album_id', id);
+
+      if (reactionData) {
+        const aggReactions: any = {};
+        reactionData.forEach((row: any) => {
+          if (!aggReactions[row.track_index]) aggReactions[row.track_index] = {};
+          if (!aggReactions[row.track_index][row.reaction_type]) {
+            aggReactions[row.track_index][row.reaction_type] = { count: 0, hasReacted: false };
+          }
+          
+          aggReactions[row.track_index][row.reaction_type].count += 1;
+          
+          // 自分が押したリアクションかどうかを判定
+          if (row.user_id === user.id) {
+            aggReactions[row.track_index][row.reaction_type].hasReacted = true;
+          }
+        });
+        setReactions(aggReactions);
       }
 
       setIsLoading(false);
@@ -112,8 +152,7 @@ function ReviewDetailContent() {
   const handleUpdate = async () => {
     setSaveStatus("SAVING...");
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!currentUserId) {
       setSaveStatus("LOGIN REQUIRED");
       return;
     }
@@ -130,7 +169,7 @@ function ReviewDetailContent() {
       score: parseFloat(calculateScoreDisplay()),
       genre: review.genre?.toUpperCase() === "HIP-HOP/RAP" ? "Hip Hop" : (review.genre || "Unknown"),
       release_year: review.release_year || "Unknown",
-      user_id: user.id 
+      user_id: currentUserId 
     };
 
     const { error } = await supabase
@@ -147,12 +186,50 @@ function ReviewDetailContent() {
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
+  // ★追加：絵文字をタップした時の処理
+  const toggleReaction = async (trackIndex: number, reactionType: string) => {
+    if (!currentUserId || !review) return;
+
+    const currentData = reactions[trackIndex]?.[reactionType] || { count: 0, hasReacted: false };
+    const isAdding = !currentData.hasReacted;
+
+    // 画面の表示を先にパッと切り替える（楽観的UI更新）
+    setReactions((prev: any) => ({
+      ...prev,
+      [trackIndex]: {
+        ...prev[trackIndex],
+        [reactionType]: {
+          count: isAdding ? currentData.count + 1 : Math.max(0, currentData.count - 1),
+          hasReacted: isAdding
+        }
+      }
+    }));
+
+    // 裏でSupabaseに保存・削除を行う
+    if (isAdding) {
+      await supabase.from('track_reactions').insert({
+        album_id: String(review.id),
+        track_index: trackIndex,
+        user_id: currentUserId,
+        reaction_type: reactionType
+      });
+    } else {
+      await supabase.from('track_reactions')
+        .delete()
+        .eq('album_id', String(review.id))
+        .eq('track_index', trackIndex)
+        .eq('user_id', currentUserId)
+        .eq('reaction_type', reactionType);
+    }
+  };
+
   const toggleExpand = (i: number) => setExpandedTrack(expandedTrack === i ? null : i);
 
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black italic animate-pulse">SYNCING DATA...</div>;
   if (errorMsg || !review) return <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6 text-orange-500 font-black italic uppercase"><p className="mb-4">Digging Failed: {errorMsg || "Review not found"}</p><Link href="/" className="bg-orange-500 text-black px-8 py-3 rounded-2xl font-black text-[10px]">Back</Link></div>;
 
   return (
+    {/* ★修正済：セーフエリアの余白を適用（pt-[calc(env(safe-area-inset-top)+1rem)]） */}
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-[calc(env(safe-area-inset-top)+1rem)] font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
         <header className="flex justify-between items-center mb-8 md:mb-10">
@@ -288,6 +365,30 @@ function ReviewDetailContent() {
                         </div>
                       );
                     })()}
+
+                    {/* ★追加：絵文字リアクションのUI */}
+                    <div className="mt-4 pt-3 border-t border-gray-800/30">
+                      <div className="flex items-center gap-4">
+                        {REACTION_TYPES.map(rt => {
+                          const rData = reactions[i]?.[rt.id] || { count: 0, hasReacted: false };
+                          return (
+                            <button
+                              key={rt.id}
+                              onClick={(e) => { e.stopPropagation(); toggleReaction(i, rt.id); }}
+                              className={`flex items-center gap-1.5 transition-all duration-300 
+                                ${rData.hasReacted ? 'scale-125 opacity-100' : 'opacity-30 hover:opacity-80 active:scale-110'}`}
+                            >
+                              <span className="text-sm md:text-base drop-shadow-lg">{rt.emoji}</span>
+                              {rData.count > 0 && (
+                                <span className={`text-[9px] font-black italic transition-colors ${rData.hasReacted ? 'text-orange-500' : 'text-gray-500'}`}>
+                                  {rData.count}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
                   </div>
                 </div>
