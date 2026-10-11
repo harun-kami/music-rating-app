@@ -117,7 +117,7 @@ function ReviewContent() {
   if (isLoading) return <div className="min-h-screen bg-[#121212] flex items-center justify-center text-orange-500 font-black tracking-widest animate-pulse italic">DIGGING...</div>;
 
   return (
-    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-[calc(env(safe-area-inset-top)+1rem)] font-sans overflow-x-hidden text-left">
+    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-12 md:pt-8 font-sans overflow-x-hidden text-left">
       <div className="max-w-3xl mx-auto">
         {!selectedAlbum ? (
           <div>

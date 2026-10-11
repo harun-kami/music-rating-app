@@ -116,7 +116,7 @@ function ArtistContent() {
   );
 
   return (
-    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-[calc(env(safe-area-inset-top)+1rem)] font-sans overflow-x-hidden text-left">
+    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-12 md:pt-8 font-sans overflow-x-hidden text-left">
       <div className="max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-10">
           <Link href="/" className="text-gray-500 hover:text-orange-500 text-[10px] font-black uppercase italic tracking-widest transition-colors">← Library</Link>
