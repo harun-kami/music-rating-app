@@ -17,6 +17,9 @@ function ArtistContent() {
   
   const [showAllRankings, setShowAllRankings] = useState(false);
 
+  // ★追加：アーティストのファッション・カルチャー情報
+  const [artistEditorial, setArtistEditorial] = useState<any>(null);
+
   const calculateScore = (ratings: any, tracks: any[]) => {
     if (!ratings || !tracks || tracks.length === 0) return "0.0";
     const rankMap: { [key: string]: number } = { "S": 5, "A": 4, "B": 3, "C": 2, "D": 1 };
@@ -77,7 +80,6 @@ function ArtistContent() {
               images: [{ url: item.artworkUrl100?.replace('100x100bb', '600x600bb') || "" }],
               release_date: item.releaseDate,
             }))
-            // 最新作が先頭（一番左）に来るように降順ソート
             .sort((a: any, b: any) => 
               new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
             );
@@ -97,6 +99,17 @@ function ArtistContent() {
 
         const sorted = (revData || []).sort((a: any, b: any) => b.score - a.score);
         setMyRankings(sorted);
+
+        // ★追加：Supabaseからアーティストのブランド・カルチャー情報を取得
+        const { data: edData } = await supabase
+          .from('artist_editorials')
+          .select('*')
+          .eq('artist_id', id)
+          .single();
+
+        if (edData) {
+          setArtistEditorial(edData);
+        }
         
       } catch (e) {
         setErrorMsg("Network Error. Please try again.");
@@ -209,7 +222,77 @@ function ArtistContent() {
           </section>
         )}
 
-        {/* ★ 改良箇所：Discographyを横スクロール（左が最新、右へ遡る）に変更 */}
+        {/* ★追加：ファッション・ブランド＆カルチャーセクション（データがある時だけ表示） */}
+        {(artistEditorial?.brands?.length > 0 || artistEditorial?.style_note) && (
+          <section className="px-1 md:px-0 mb-16 md:mb-20">
+            <div className="flex justify-between items-end mb-6 pb-4 border-b border-gray-900">
+              <div className="flex items-center gap-3">
+                <h2 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] italic">
+                  Style & Culture // Worn Brands
+                </h2>
+              </div>
+              {artistEditorial?.brands?.length > 2 && (
+                <span className="text-[8px] font-bold text-gray-700 uppercase italic tracking-widest">Swipe →</span>
+              )}
+            </div>
+
+            {artistEditorial?.style_note && (
+              <p className="text-[10px] md:text-xs text-gray-400 font-bold leading-relaxed mb-6 border-l-2 border-orange-500/50 pl-3 whitespace-pre-wrap italic">
+                {artistEditorial.style_note}
+              </p>
+            )}
+
+            {artistEditorial?.brands?.length > 0 && (
+              <div className="flex overflow-x-auto gap-4 md:gap-5 pb-4 pt-1 scrollbar-hide snap-x">
+                {artistEditorial.brands.map((brand: any, idx: number) => (
+                  <div 
+                    key={idx} 
+                    className="flex-none w-36 sm:w-44 bg-[#1a1a1a] border border-gray-800 hover:border-orange-500/60 rounded-2xl p-4 flex flex-col justify-between aspect-[4/3] group transition-all duration-300 snap-start shadow-xl relative overflow-hidden"
+                  >
+                    {/* 上部タグ（FOOTWEAR, STREETWEARなど） */}
+                    <div className="flex justify-between items-center z-10">
+                      <span className="text-[7px] font-black text-gray-600 group-hover:text-orange-500/80 uppercase tracking-[0.2em] transition-colors">
+                        {brand.tag || "ARCHIVE"}
+                      </span>
+                      <span className="text-[8px] text-gray-800 group-hover:text-orange-500 font-black italic transition-colors">
+                        0{idx + 1}
+                      </span>
+                    </div>
+
+                    {/* 中央ロゴ画像 または タイポグラフィ */}
+                    <div className="my-auto flex items-center justify-center h-14 px-2 z-10">
+                      {brand.logo ? (
+                        <img 
+                          src={brand.logo} 
+                          alt={brand.name} 
+                          className="max-h-full max-w-full object-contain filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-500"
+                        />
+                      ) : (
+                        <span className="text-sm md:text-base font-black italic text-white group-hover:text-orange-500 uppercase tracking-tighter text-center leading-none transition-colors break-words">
+                          {brand.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 下部ブランド名 */}
+                    <div className="border-t border-gray-800/60 pt-2 flex justify-between items-center z-10">
+                      <span className="text-[9px] font-black text-gray-400 group-hover:text-white uppercase tracking-widest truncate">
+                        {brand.name}
+                      </span>
+                    </div>
+
+                    {/* 背景のうっすらとした装飾 */}
+                    <div className="absolute -bottom-3 -right-2 text-4xl font-black italic text-white/[0.02] group-hover:text-orange-500/[0.05] pointer-events-none select-none uppercase tracking-tighter transition-colors">
+                      {brand.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Discography（横スクロール仕様） */}
         <section className="px-1 md:px-0 pb-12">
           <div className="flex justify-between items-end mb-6 pb-4 border-b border-gray-900">
             <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Discography</h2>
@@ -222,7 +305,7 @@ function ArtistContent() {
               return (
                 <div key={album.id} className="flex-none w-36 sm:w-44 md:w-48 group relative snap-start">
                   <Link href={`/review?id=${album.id}`}>
-                    <div className={` relative aspect-square mb-3 overflow-hidden rounded-xl md:rounded-2xl border transition-all duration-500 shadow-xl 
+                    <div className={`relative aspect-square mb-3 overflow-hidden rounded-xl md:rounded-2xl border transition-all duration-500 shadow-xl 
                       ${isRated ? 'border-orange-500 shadow-orange-500/20' : 'border-gray-800 group-hover:border-gray-500'}`}>
                       <img 
                         src={album.images?.[0]?.url} 
