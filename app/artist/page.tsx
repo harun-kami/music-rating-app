@@ -14,6 +14,8 @@ function ArtistContent() {
   const [myRankings, setMyRankings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  const [showAllRankings, setShowAllRankings] = useState(false);
 
   const calculateScore = (ratings: any, tracks: any[]) => {
     if (!ratings || !tracks || tracks.length === 0) return "0.0";
@@ -61,11 +63,8 @@ function ArtistContent() {
               const isExplicitlyClean = item.collectionExplicitness === 'cleaned';
               const isCleanTitle = lowerName.includes('clean');
               const isDuplicate = seenCollectionIds.has(item.collectionId);
-
-              // === 🔥 ここを追加: "- Single" を除外する条件 ===
               const isSingle = lowerName.endsWith('- single') || lowerName.endsWith(' - single');
 
-              // if文の中に !isSingle を追加
               if (!isExplicitlyClean && !isCleanTitle && !isDuplicate && !isSingle) {
                 seenCollectionIds.add(item.collectionId);
                 return true;
@@ -78,6 +77,7 @@ function ArtistContent() {
               images: [{ url: item.artworkUrl100?.replace('100x100bb', '600x600bb') || "" }],
               release_date: item.releaseDate,
             }))
+            // 最新作が先頭（一番左）に来るように降順ソート
             .sort((a: any, b: any) => 
               new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
             );
@@ -115,6 +115,9 @@ function ArtistContent() {
     </div>
   );
 
+  const topThreeRankings = myRankings.slice(0, 3);
+  const remainingRankings = myRankings.slice(3);
+
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-12 pt-12 md:pt-8 font-sans overflow-x-hidden text-left">
       <div className="max-w-4xl mx-auto">
@@ -139,36 +142,87 @@ function ArtistContent() {
             <h2 className="text-xl md:text-2xl font-black italic text-white uppercase tracking-tighter mb-8 flex items-center gap-4">
               My Rankings <div className="flex-1 h-px bg-orange-500/20"></div>
             </h2>
+            
             <div className="grid gap-4">
-              {myRankings.map((rev, i) => (
-                <Link key={rev.id} href={`/review/detail?id=${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-3 md:p-4 rounded-[1.5rem] md:rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
-                  <div className="flex-none w-10 md:w-14 text-2xl md:text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-1 md:-ml-4 mr-2 flex items-center justify-center">
-                    #{i + 1}
-                  </div>
-                  <img src={rev.image} className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl object-cover mr-4 md:mr-6 shadow-xl flex-none" alt="" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-[11px] md:text-lg uppercase italic truncate group-hover:text-orange-500 transition-colors">{rev.title}</h3>
-                  </div>
-                  <div className="text-right ml-2 md:ml-4 flex-none">
-                    <div className="text-xl md:text-3xl font-black text-orange-500 italic">
-                      {calculateScore(rev.ratings, rev.tracks)}
+              {topThreeRankings.map((rev) => {
+                const displayRank = myRankings.findIndex(r => r.score === rev.score) + 1;
+                return (
+                  <Link key={rev.id} href={`/review/detail?id=${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-3 md:p-4 rounded-[1.5rem] md:rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
+                    <div className="flex-none w-10 md:w-14 text-2xl md:text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-1 md:-ml-4 mr-2 flex items-center justify-center">
+                      #{displayRank}
                     </div>
-                  </div>
-                </Link>
-              ))}
+                    <img src={rev.image} className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl object-cover mr-4 md:mr-6 shadow-xl flex-none" alt="" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-[11px] md:text-lg uppercase italic truncate group-hover:text-orange-500 transition-colors">{rev.title}</h3>
+                    </div>
+                    <div className="text-right ml-2 md:ml-4 flex-none">
+                      <div className="text-xl md:text-3xl font-black text-orange-500 italic">
+                        {calculateScore(rev.ratings, rev.tracks)}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
+
+            {remainingRankings.length > 0 && (
+              <div>
+                <div 
+                  className={`grid gap-4 transition-all duration-500 ease-in-out overflow-hidden ${
+                    showAllRankings ? 'max-h-[3000px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'
+                  }`}
+                >
+                  {remainingRankings.map((rev) => {
+                    const displayRank = myRankings.findIndex(r => r.score === rev.score) + 1;
+                    return (
+                      <Link key={rev.id} href={`/review/detail?id=${rev.id}`} className="group flex items-center bg-[#1a1a1a] p-3 md:p-4 rounded-[1.5rem] md:rounded-3xl border border-gray-800 hover:border-orange-500/50 transition-all">
+                        <div className="flex-none w-10 md:w-14 text-2xl md:text-4xl font-black italic text-orange-500/20 group-hover:text-orange-500 transition-colors -ml-1 md:-ml-4 mr-2 flex items-center justify-center">
+                          #{displayRank}
+                        </div>
+                        <img src={rev.image} className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl object-cover mr-4 md:mr-6 shadow-xl flex-none" alt="" />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-[11px] md:text-lg uppercase italic truncate group-hover:text-orange-500 transition-colors">{rev.title}</h3>
+                        </div>
+                        <div className="text-right ml-2 md:ml-4 flex-none">
+                          <div className="text-xl md:text-3xl font-black text-orange-500 italic">
+                            {calculateScore(rev.ratings, rev.tracks)}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setShowAllRankings(!showAllRankings)}
+                  className="w-full mt-4 py-3 md:py-4 bg-[#1a1a1a]/60 hover:bg-[#1a1a1a] border border-gray-800/80 hover:border-orange-500/40 rounded-2xl text-[9px] md:text-[10px] font-black text-gray-500 hover:text-orange-500 uppercase italic tracking-[0.3em] transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+                >
+                  <span>
+                    {showAllRankings ? 'CLOSE ARCHIVE' : `VIEW ALL (${myRankings.length})`}
+                  </span>
+                  <span className={`text-[8px] transition-transform duration-300 ${showAllRankings ? 'rotate-180 text-orange-500' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+              </div>
+            )}
           </section>
         )}
 
-        <section className="px-1 md:px-0">
-          <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-8 pb-4 border-b border-gray-900">Discography</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8">
+        {/* ★ 改良箇所：Discographyを横スクロール（左が最新、右へ遡る）に変更 */}
+        <section className="px-1 md:px-0 pb-12">
+          <div className="flex justify-between items-end mb-6 pb-4 border-b border-gray-900">
+            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Discography</h2>
+            <span className="text-[8px] font-bold text-gray-700 uppercase italic tracking-widest">Swipe →</span>
+          </div>
+          
+          <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 pt-1 scrollbar-hide snap-x">
             {albums.map((album) => {
               const isRated = myRankings.some(r => String(r.id) === String(album.id));
               return (
-                <div key={album.id} className="group relative">
+                <div key={album.id} className="flex-none w-36 sm:w-44 md:w-48 group relative snap-start">
                   <Link href={`/review?id=${album.id}`}>
-                    <div className={`aspect-square mb-3 md:mb-4 overflow-hidden rounded-xl md:rounded-2xl border transition-all duration-500 shadow-xl 
+                    <div className={` relative aspect-square mb-3 overflow-hidden rounded-xl md:rounded-2xl border transition-all duration-500 shadow-xl 
                       ${isRated ? 'border-orange-500 shadow-orange-500/20' : 'border-gray-800 group-hover:border-gray-500'}`}>
                       <img 
                         src={album.images?.[0]?.url} 
@@ -182,10 +236,10 @@ function ArtistContent() {
                         </div>
                       )}
                     </div>
-                    <h3 className="font-bold text-[9px] md:text-[11px] line-clamp-2 leading-tight group-hover:text-orange-500 transition-colors px-1">
+                    <h3 className="font-bold text-[10px] md:text-xs line-clamp-2 leading-tight group-hover:text-orange-500 transition-colors px-1">
                       {album.name}
                     </h3>
-                    <p className="text-[8px] md:text-[10px] text-gray-700 font-bold mt-2 px-1 italic">
+                    <p className="text-[8px] md:text-[10px] text-gray-700 font-bold mt-1.5 px-1 italic">
                       {album.release_date ? new Date(album.release_date).getFullYear() : "----"}
                     </p>
                   </Link>
